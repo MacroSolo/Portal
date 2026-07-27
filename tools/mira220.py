@@ -1,10 +1,5 @@
 import cv2
-import numpy as np
 from picamera2 import Picamera2
-
-from gpiozero import OutputDevice
-pin = OutputDevice(16, initial_value=False)
-pin.on()
 
 
 def camera_loop():
@@ -13,15 +8,20 @@ def camera_loop():
     picam0.configure(config0)
     picam0.start()
 
-    #picam1 = Picamera2(camera_num=1)
-    #config1 = picam1.create_preview_configuration(main={"format": "YUV420", "size": (640, 480)})
-    #picam1.configure(config1)
-    #picam1.start()
-
+    # Disable auto exposure/gain, then set manual values
+    # ExposureTime is in microseconds, AnalogueGain is a float multiplier
+    picam0.set_controls({
+        "AeEnable": False,
+        "ExposureTime": 10000,   # 10 ms, adjust to taste
+        "AnalogueGain": 2.0,     # adjust to taste
+    })
 
     while True:
         frame0 = picam0.capture_array()
         frame0 = frame0[:1400, :1600]  # Crop to 1600x1400
+
+        # Rotate 180 degrees
+        frame0 = cv2.rotate(frame0, cv2.ROTATE_180)
 
         cv2.imshow("Mira220", frame0)
 
@@ -33,7 +33,4 @@ def camera_loop():
 
 
 if __name__ == "__main__":
-
     camera_loop()
-
-    pin.off()
