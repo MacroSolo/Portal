@@ -2,6 +2,10 @@ import cv2
 import numpy as np
 from picamera2 import Picamera2
 
+from gpiozero import OutputDevice
+pin = OutputDevice(16, initial_value=False)
+pin.on()
+
 
 def camera_loop():
     picam0 = Picamera2(camera_num=0)
@@ -29,4 +33,7 @@ def camera_loop():
 
 
 if __name__ == "__main__":
+
     camera_loop()
+
+    pin.off()
