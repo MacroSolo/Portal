@@ -12,8 +12,8 @@ def camera_loop():
     # ExposureTime is in microseconds, AnalogueGain is a float multiplier
     picam0.set_controls({
         "AeEnable": False,
-        "ExposureTime": 10000,   # 10 ms, adjust to taste
-        "AnalogueGain": 2.0,     # adjust to taste
+        "ExposureTime": 1_000,
+        "AnalogueGain": 8,
     })
 
     while True:
