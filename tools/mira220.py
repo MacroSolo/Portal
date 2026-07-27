@@ -3,7 +3,7 @@ import numpy as np
 from picamera2 import Picamera2
 
 
-def main():
+def camera_loop():
     picam0 = Picamera2(camera_num=0)
     config0 = picam0.create_preview_configuration(main={"format": "YUV420", "size": (640, 480)})
     picam0.configure(config0)
@@ -29,4 +29,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    camera_loop()

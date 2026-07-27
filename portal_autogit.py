@@ -33,7 +33,6 @@ if __name__ == "__main__":
 
     def command(topic, payload):
         print(f"[command] topic={topic}  payload={payload}")
-
         if payload.lower() == "git/update":
             try:
                 # Get the current working directory
