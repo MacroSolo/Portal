@@ -88,14 +88,15 @@ if __name__ == "__main__":
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-
+    cpu_temp = get_cpu_temperature()
     while True:
         frame = frames[-1] if frames else None
         if frame is not None:
+            cpu_temo = 0.9 * cpu_temp + 0.1 * get_cpu_temperature()
 
             logs = [
                 f"CPU Serial: {cpu_serial}",
-                f"CPU Temp: {int(get_cpu_temperature())} C",
+                f"CPU Temp: {int(cpu_temp)} C",
                 f"",
                 f"",
                 f"frames: {len(frames)}",
