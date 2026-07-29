@@ -131,9 +131,9 @@ if __name__ == "__main__":
             frame = apply_sigmoid_contrast(frame, k=3, midpoint=0.5)
 
             if mode == 1:
-                frame = cv2.applyColorMap(frame, cv2.COLORMAP_HOT)
+                frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
             elif mode == 2:
-                frame = cv2.applyColorMap(frame, cv2.COLORMAP_OCEAN)
+                frame = cv2.applyColorMap(frame, cv2.COLORMAP_RAINBOW)
             else:
                 frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
 
