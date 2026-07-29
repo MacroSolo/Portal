@@ -10,8 +10,8 @@ import numpy as np
 def terminal_log(img, logs=["log1", "log2", "log3"]):
     img = img.copy()
     for i, log in enumerate(logs):
-        cv2.putText(img, log, (10, 40 + i * 40), cv2.FONT_HERSHEY_SIMPLEX, 1, 0, 5)
-        cv2.putText(img, log, (10, 40 + i * 40), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, 2)
+        cv2.putText(img, log, (10, 40 + i * 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 5)
+        cv2.putText(img, log, (10, 40 + i * 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
     return img
 
 
@@ -96,8 +96,8 @@ if __name__ == "__main__":
 
             # add colormap to the frame
             frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
-            frame = terminal_log(frame, logs)
 
+            frame = terminal_log(frame, logs)
 
             cv2.imshow("IR", frame)
             key = cv2.waitKey(1)
