@@ -139,9 +139,6 @@ if __name__ == "__main__":
             else:
                 frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
 
-            frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
-
-
 
 
             frame = terminal_log(frame, logs)
