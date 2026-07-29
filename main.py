@@ -132,7 +132,7 @@ if __name__ == "__main__":
             if mode == 1:
                 frame = apply_sigmoid_contrast(frame, k=3, midpoint=0.1)
             elif mode == 2:
-                frame = apply_sigmoid_contrast(frame, k=3, midpoint=0.5)
+                frame = apply_sigmoid_contrast(frame, k=15, midpoint=0.5)
 
 
             # add colormap to the frame
