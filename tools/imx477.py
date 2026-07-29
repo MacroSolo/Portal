@@ -12,7 +12,12 @@ def camera_loop():
 
     # Set format to BGR888 and resolution to 1280x800
     config0 = picam0.create_preview_configuration(
-        main={"format": "BGR888", "size": (1280, 800)}
+        main={"format": "BGR888", "size": (1280, 800)},
+        buffer_count=2,
+        controls={
+            "FrameDurationLimits": (1_000_000 // 30, 1_000_000 // 30),  # 30 FPS
+            "NoiseReductionMode": "off",
+        }
     )
     picam0.configure(config0)
     picam0.start()
@@ -23,7 +28,6 @@ def camera_loop():
     # Completely lock exposure, gain, and white balance
     # ColourGains is set to fixed red/blue gains to prevent AWB color-shifts
     picam0.set_controls({
-        "FrameBufferCount": 2,
         "AeEnable": False,
         "AwbEnable": False,
         "ExposureTime": 5_000,     # Exposure in microseconds
