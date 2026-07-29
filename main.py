@@ -116,7 +116,7 @@ if __name__ == "__main__":
             frame = terminal_log(frame, logs)
 
             cv2.imshow("IR", frame)
-            key = cv2.waitKey(1)
+            key = cv2.waitKey(100)
             if key == ord("q"):
                 break
 
