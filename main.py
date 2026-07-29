@@ -6,6 +6,22 @@ from threading import Thread
 import cv2
 import numpy as np
 
+from gpiozero import Button, OutputDevice
+mode = 0
+sw_9 = Button(9, pull_up=True)
+sw_11 = Button(11, pull_up=True)
+
+def on_switch_change():
+    global mode
+
+    if sw_9.is_pressed:
+        mode = 1
+    elif sw_11.is_pressed:
+        mode = 2
+    else:
+        mode = 0
+
+
 
 def terminal_log(img, logs=["log1", "log2", "log3"]):
     img = img.copy()
@@ -72,11 +88,16 @@ def apply_sigmoid_contrast(frame, k=10, midpoint=0.5):
 
 
 if __name__ == "__main__":
+    pin = OutputDevice(26, initial_value=False)
+
+    sw_9.when_pressed = on_switch_change
+    sw_9.when_released = on_switch_change
+    sw_11.when_pressed = on_switch_change
+    sw_11.when_released = on_switch_change
+
+
     cpu_serial = get_cpu_serial()
 
-    from gpiozero import OutputDevice
-
-    pin = OutputDevice(26, initial_value=False)
 
     thread = Thread(target=camera_loop, daemon=True)
     thread.start()
@@ -97,7 +118,7 @@ if __name__ == "__main__":
             logs = [
                 f"CPU Serial: {cpu_serial}",
                 f"CPU Temp: {int(cpu_temp)} C",
-                f"",
+                f"mode: {mode}",
                 f"",
                 f"frames: {len(frames)}",
             ]
