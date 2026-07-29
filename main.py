@@ -94,10 +94,9 @@ if __name__ == "__main__":
     sw_9.when_released = on_switch_change
     sw_11.when_pressed = on_switch_change
     sw_11.when_released = on_switch_change
-
+    on_switch_change()
 
     cpu_serial = get_cpu_serial()
-
 
     thread = Thread(target=camera_loop, daemon=True)
     thread.start()
@@ -130,9 +129,9 @@ if __name__ == "__main__":
 
             frame = frame[:, :, 2]
             if mode == 1:
-                frame = apply_sigmoid_contrast(frame, k=3, midpoint=0.1)
+                frame = apply_sigmoid_contrast(frame, k=5, midpoint=0.1)
             elif mode == 2:
-                frame = apply_sigmoid_contrast(frame, k=15, midpoint=0.5)
+                frame = apply_sigmoid_contrast(frame, k=3, midpoint=0.5)
 
 
             # add colormap to the frame
