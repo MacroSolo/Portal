@@ -10,8 +10,9 @@ import numpy as np
 def terminal_log(img, logs=["log1", "log2", "log3"]):
     img = img.copy()
     for i, log in enumerate(logs):
-        cv2.putText(img, log, (10, 40 + i * 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 15)
-        cv2.putText(img, log, (10, 40 + i * 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1)
+        x, y = 10, 40 + i * 40
+        cv2.putText(img, log, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4, cv2.LINE_AA)
+        cv2.putText(img, log, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA)
     return img
 
 
