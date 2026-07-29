@@ -1,5 +1,5 @@
-from tools.mira220 import *
-
+#from tools.mira220 import *
+from tools.imx477 import *
 
 if __name__ == "__main__":
     from gpiozero import OutputDevice
