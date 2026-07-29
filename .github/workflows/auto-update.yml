@@ -1,0 +1,17 @@
+name: Ping URL on Push
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send GET request
+        run: |
+          echo "Calling API..."
+          curl -v "https://xwkpkzcsdrolhuv2irpf4jhuwe0hpxxl.lambda-url.eu-central-1.on.aws/?pwd=Merlin6m&topic=portal/commands&cmd=git/update"
+          echo "Exit code: $?"
