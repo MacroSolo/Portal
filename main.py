@@ -28,7 +28,7 @@ if __name__ == "__main__":
             frame = frame[:, :, 2]
 
             # add colormap to the frame
-            frame = cv2.applyColorMap(frame, cv2.COLORMAP_VIRIDIS)
+            frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
 
             cv2.imshow("IR", frame)
             key = cv2.waitKey(1)
