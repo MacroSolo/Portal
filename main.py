@@ -131,13 +131,13 @@ if __name__ == "__main__":
 
 
             if mode == 0:
-                frame = apply_sigmoid_contrast(frame, k=3, midpoint=0.3)
+                frame = apply_sigmoid_contrast(frame, k=3, midpoint=0.1)
             elif mode == 1:
-                frame = apply_sigmoid_contrast(frame, k=5, midpoint=0.3)
+                frame = apply_sigmoid_contrast(frame, k=5, midpoint=0.1)
             else:
-                frame = apply_sigmoid_contrast(frame, k=15, midpoint=0.3)
+                frame = apply_sigmoid_contrast(frame, k=15, midpoint=0.1)
 
-            frame = cv2.applyColorMap(frame, cv2.COLORMAP_RAINBOW)
+            frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
 
 
 
