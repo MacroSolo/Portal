@@ -27,6 +27,9 @@ if __name__ == "__main__":
 
             frame = frame[:, :, 2]
 
+            # add colormap to the frame
+            frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
+
             cv2.imshow("IR", frame)
             key = cv2.waitKey(1)
             if key == ord("q"):
