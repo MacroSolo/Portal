@@ -128,16 +128,16 @@ if __name__ == "__main__":
             frame = cv2.rotate(frame, cv2.ROTATE_180)
 
             frame = frame[:, :, 2]
-            frame = apply_sigmoid_contrast(frame, k=5, midpoint=0.3)
 
-            if mode == 1:
-                frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
-            elif mode == 2:
-                frame = cv2.applyColorMap(frame, cv2.COLORMAP_RAINBOW)
+
+            if mode == 0:
+                frame = apply_sigmoid_contrast(frame, k=3, midpoint=0.3)
+            elif mode == 1:
+                frame = apply_sigmoid_contrast(frame, k=5, midpoint=0.3)
             else:
-                frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
+                frame = apply_sigmoid_contrast(frame, k=15, midpoint=0.3)
 
-
+            frame = cv2.applyColorMap(frame, cv2.COLORMAP_RAINBOW)
 
 
 
