@@ -7,6 +7,26 @@ import cv2
 import numpy as np
 
 
+def terminal_log(img, logs=["log1", "log2", "log3"]):
+    img = img.copy()
+    for i, log in enumerate(logs):
+        cv2.putText(img, log, (10, 40 + i * 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 5)
+        cv2.putText(img, log, (10, 40 + i * 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    return img
+
+
+def get_cpu_temperature():
+    # Reads the temperature from the system file
+    try:
+        with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
+            temp_str = f.read()
+        # Convert from millidegrees to degrees Celsius
+        temp_c = float(temp_str) / 1000.0
+    except Exception:
+        temp_c = -1.0
+    return temp_c
+
+
 def apply_sigmoid_contrast(frame, k=10, midpoint=0.5):
     """
     Transforms linear pixel brightness into an S-shaped (sigmoid) curve.
@@ -57,6 +77,17 @@ if __name__ == "__main__":
     while True:
         frame = frames[-1] if frames else None
         if frame is not None:
+
+            logs = [
+                f"CPU Serial: {123}",
+                f"CPU Temp: {int(get_cpu_temperature())} C",
+                f"",
+                f"",
+                f"frames: {len(frames)}",
+            ]
+
+
+
             # Frame preprocessing
             frame = cv2.rotate(frame, cv2.ROTATE_180)
 
@@ -65,6 +96,8 @@ if __name__ == "__main__":
 
             # add colormap to the frame
             frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
+
+            dash_frame = terminal_log(dash_frame, logs)
 
             cv2.imshow("IR", frame)
             key = cv2.waitKey(1)
