@@ -11,8 +11,8 @@ def terminal_log(img, logs=["log1", "log2", "log3"]):
     img = img.copy()
     for i, log in enumerate(logs):
         x, y = 10, 40 + i * 40
-        cv2.putText(img, log, (x, y), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(0, 0, 0), thickness=15)
-        cv2.putText(img, log, (x, y), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(255, 255, 255), thickness=1)
+        cv2.putText(img, log, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 1, cv2.LINE_AA)
+        cv2.putText(img, log, (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), .3, cv2.LINE_AA)
     return img
 
 
