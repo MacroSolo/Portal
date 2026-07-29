@@ -27,6 +27,18 @@ def get_cpu_temperature():
         temp_c = -1.0
     return temp_c
 
+def get_cpu_serial():
+    cpu_serial = "Unknown"
+    try:
+        with open("/proc/cpuinfo", "r") as f:
+            for line in f:
+                if line.startswith("Serial"):
+                    cpu_serial = line.split(":")[1].strip()
+                    break
+    except Exception:
+        pass
+    return cpu_serial
+
 
 def apply_sigmoid_contrast(frame, k=10, midpoint=0.5):
     """
@@ -60,6 +72,8 @@ def apply_sigmoid_contrast(frame, k=10, midpoint=0.5):
 
 
 if __name__ == "__main__":
+    cpu_serial = get_cpu_serial()
+
     from gpiozero import OutputDevice
 
     pin = OutputDevice(26, initial_value=False)
@@ -80,7 +94,7 @@ if __name__ == "__main__":
         if frame is not None:
 
             logs = [
-                f"CPU Serial: {123}",
+                f"CPU Serial: {cpu_serial}",
                 f"CPU Temp: {int(get_cpu_temperature())} C",
                 f"",
                 f"",
