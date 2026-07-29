@@ -22,9 +22,9 @@ def camera_loop():
     picam0.set_controls({
         "AeEnable": False,
         "AwbEnable": False,
-        "ExposureTime": 10_000,     # Exposure in microseconds
+        "ExposureTime": 5_000,     # Exposure in microseconds
         "AnalogueGain": 5.0,        # Fixed analog gain
-        "ColourGains": (1.5, 1.5)   # Fixed red/blue white balance multipliers
+        #"ColourGains": (1.5, 1.5)   # Fixed red/blue white balance multipliers
     })
 
     window_name = "Raspberry Pi HD Camera"
