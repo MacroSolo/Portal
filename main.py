@@ -25,7 +25,7 @@ if __name__ == "__main__":
             # Frame preprocessing
             frame = cv2.rotate(frame, cv2.ROTATE_180)
 
-            frame = frame[:, :, 0]
+            frame = frame[:, :, 1]
 
             cv2.imshow("IR", frame)
             key = cv2.waitKey(1)
