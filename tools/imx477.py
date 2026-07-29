@@ -1,3 +1,4 @@
+import time
 import cv2
 from picamera2 import Picamera2
 
@@ -13,11 +14,17 @@ def camera_loop():
     picam0.configure(config0)
     picam0.start()
 
-    # Disable auto exposure/gain and set manual values
+    # Wait briefly to ensure the camera hardware pipeline starts
+    time.sleep(0.5)
+
+    # Completely lock exposure, gain, and white balance
+    # ColourGains is set to fixed red/blue gains to prevent AWB color-shifts
     picam0.set_controls({
         "AeEnable": False,
-        "ExposureTime": 10_000,
-        "AnalogueGain": 2.0,
+        "AwbEnable": False,
+        "ExposureTime": 10_000,     # Exposure in microseconds
+        "AnalogueGain": 2.0,        # Fixed analog gain
+        "ColourGains": (1.5, 1.5)   # Fixed red/blue white balance multipliers
     })
 
     window_name = "Raspberry Pi HD Camera"
