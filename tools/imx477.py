@@ -27,7 +27,7 @@ def camera_loop():
         "AeEnable": False,
         "AwbEnable": False,
         "ExposureTime": 512,     # Exposure in microseconds
-        "AnalogueGain": 5,        # Fixed analog gain
+        "AnalogueGain": 16,        # Fixed analog gain
         #"ColourGains": (1.5, 1.5)   # Fixed red/blue white balance multipliers
     })
 
