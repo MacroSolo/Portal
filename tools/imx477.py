@@ -14,10 +14,6 @@ def camera_loop():
     config0 = picam0.create_preview_configuration(
         main={"format": "BGR888", "size": (1280, 800)},
         buffer_count=2,
-        controls={
-            "FrameDurationLimits": (1_000_000 // 30, 1_000_000 // 30),  # 30 FPS
-            "NoiseReductionMode": "off",
-        }
     )
     picam0.configure(config0)
     picam0.start()
