@@ -128,15 +128,16 @@ if __name__ == "__main__":
             frame = cv2.rotate(frame, cv2.ROTATE_180)
 
             frame = frame[:, :, 2]
-
-            #frame = apply_sigmoid_contrast(frame, k=5, midpoint=0.7)
+            frame = np.clip(frame, 35, 255)
+            # normalize to 0-255
+            frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
 
             if mode == 0:
-                frame = np.clip(frame, 25, 255)
+                frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
             elif mode == 1:
-                frame = np.clip(frame, 35, 255)
+                frame = cv2.applyColorMap(frame, cv2.COLORMAP_PINK)
             else:
-                frame = np.clip(frame, 45, 255)
+                frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
 
             frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
 
