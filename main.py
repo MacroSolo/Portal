@@ -136,10 +136,8 @@ if __name__ == "__main__":
             if mode == 0:
                 colored_frame[frame <= 15] = (255, 0, 0)
             elif mode == 1:
-                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
                 colored_frame[frame <= 25] = (255, 0, 0)
             else:
-                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_WINTER)
                 colored_frame[frame <= 35] = (255, 0, 0)
 
             frame = colored_frame
