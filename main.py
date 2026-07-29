@@ -7,8 +7,6 @@ import cv2
 import numpy as np
 
 
-
-
 def terminal_log(img, logs=["log1", "log2", "log3"]):
     img = img.copy()
     for i, log in enumerate(logs):
