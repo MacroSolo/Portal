@@ -96,8 +96,8 @@ if __name__ == "__main__":
 
             # add colormap to the frame
             frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
+            dash_frame = terminal_log(frame, logs)
 
-            dash_frame = terminal_log(dash_frame, logs)
 
             cv2.imshow("IR", frame)
             key = cv2.waitKey(1)
