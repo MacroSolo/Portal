@@ -132,12 +132,11 @@ if __name__ == "__main__":
             #frame = apply_sigmoid_contrast(frame, k=5, midpoint=0.7)
 
             if mode == 0:
-                frame = np.clip(frame, 15, 255)
-
+                frame = np.clip(frame, 25, 255)
             elif mode == 1:
-                frame = np.clip(frame, 55, 255)
+                frame = np.clip(frame, 35, 255)
             else:
-                frame = np.clip(frame, 75, 255)
+                frame = np.clip(frame, 45, 255)
 
             frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
 
