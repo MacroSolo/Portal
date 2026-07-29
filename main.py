@@ -61,7 +61,7 @@ if __name__ == "__main__":
             frame = cv2.rotate(frame, cv2.ROTATE_180)
 
             frame = frame[:, :, 2]
-            frame = apply_sigmoid_contrast(frame, k=3, midpoint=0.5)
+            frame = apply_sigmoid_contrast(frame, k=15, midpoint=0.5)
 
             # add colormap to the frame
             frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
