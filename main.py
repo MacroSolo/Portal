@@ -132,20 +132,15 @@ if __name__ == "__main__":
             # normalize to 0-255
             frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
 
-
-
             if mode == 0:
-                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
-                bg_color = np.array([255, 0, 0], dtype=np.uint8)
-                colored_frame[frame > 5] = (255, 0, 0)
+                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
+                colored_frame[frame <= 5] = (255, 0, 0)
             elif mode == 1:
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
-                bg_color = np.array([255, 0, 0], dtype=np.uint8)
-                colored_frame[frame > 5] = (0, 255, 0)
+                colored_frame[frame <= 5] = (0, 255, 0)
             else:
-                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
-                bg_color = np.array([255, 0, 0], dtype=np.uint8)
-                colored_frame[frame > 5] = (0, 0, 255)
+                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_WINTER)
+                colored_frame[frame <= 5] = (0, 0, 255)
 
             frame = colored_frame
 
