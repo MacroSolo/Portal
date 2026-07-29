@@ -23,6 +23,7 @@ def camera_loop():
     # Completely lock exposure, gain, and white balance
     # ColourGains is set to fixed red/blue gains to prevent AWB color-shifts
     picam0.set_controls({
+        "FrameBufferCount": 2,
         "AeEnable": False,
         "AwbEnable": False,
         "ExposureTime": 5_000,     # Exposure in microseconds
