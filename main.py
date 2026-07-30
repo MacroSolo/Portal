@@ -135,13 +135,14 @@ if __name__ == "__main__":
             # normalize to 0-255
             frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
 
-            colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
+
             if mode == 0:
-                pass
+                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
             elif mode == 1:
-                colored_frame[frame <= 25] = (255, 0, 0)
+                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
             else:
-                colored_frame[frame <= 25] = (0, 0, 0)
+                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
+                colored_frame[frame <= 25] = (155, 55, 0)
 
             frame = colored_frame
 
