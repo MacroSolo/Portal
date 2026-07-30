@@ -12,7 +12,7 @@ def camera_loop():
 
     # Set format to BGR888 and resolution to 1280x800
     config0 = picam0.create_preview_configuration(
-        main={"format": "BGR888", "size": (1280, 800)},
+        main={"format": "BGR888", "size": (800, 1280)},
         buffer_count=2,
     )
     picam0.configure(config0)
