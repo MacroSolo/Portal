@@ -113,7 +113,7 @@ if __name__ == "__main__":
         frame = frames[-1] if frames else None
 
         if frame is not None:
-            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+            frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
             cpu_temo = 0.9 * cpu_temp + 0.1 * get_cpu_temperature()
 
