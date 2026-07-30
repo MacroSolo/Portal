@@ -26,7 +26,7 @@ def camera_loop():
     picam0.set_controls({
         "AeEnable": False,
         "AwbEnable": False,
-        "ExposureTime": 1024,     # Exposure in microseconds
+        "ExposureTime": 2048,     # Exposure in microseconds
         "AnalogueGain": 8,        # Fixed analog gain
         "ColourGains": (1.5, 1.5)   # Fixed red/blue white balance multipliers
     })
