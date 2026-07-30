@@ -142,7 +142,7 @@ if __name__ == "__main__":
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
             else:
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
-                colored_frame[frame <= 35] = (255, 155, 55)
+                colored_frame[frame <= 35] = (155, 55, 0)
 
             frame = colored_frame
 
