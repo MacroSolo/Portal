@@ -8,8 +8,8 @@ import numpy as np
 
 from gpiozero import Button, OutputDevice
 mode = 0
-sw_9 = Button(9, pull_up=True)
-sw_11 = Button(11, pull_up=True)
+sw_9 = Button(18, pull_up=True)
+sw_11 = Button(15, pull_up=True)
 
 def on_switch_change():
     global mode
@@ -88,7 +88,7 @@ def apply_sigmoid_contrast(frame, k=10, midpoint=0.5):
 
 
 if __name__ == "__main__":
-    pin = OutputDevice(26, initial_value=False)
+    pin = OutputDevice(25, initial_value=False)
 
     sw_9.when_pressed = on_switch_change
     sw_9.when_released = on_switch_change
