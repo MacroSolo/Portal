@@ -128,7 +128,6 @@ if __name__ == "__main__":
 
 
             # Frame preprocessing
-            frame = cv2.rotate(frame, cv2.ROTATE_180)
 
             frame = frame[:, :, 2]
             frame = np.clip(frame, 35, 255)
