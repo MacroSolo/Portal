@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
             if mode == 0:
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
-            elif mode == 1:
+            elif mode == 2:
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
             else:
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
