@@ -5,7 +5,7 @@ from picamera2 import Picamera2
 
 frames = deque(maxlen=30)
 
-def camera_loop(Exposure=4096, Gain=8)
+def camera_loop(Exposure=4096, Gain=8):
     global frames
     # Initialize the primary camera module
     picam0 = Picamera2(camera_num=0)

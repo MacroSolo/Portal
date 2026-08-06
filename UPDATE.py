@@ -23,5 +23,5 @@ if __name__ == "__main__":
     )
 
     mc.connect()
-    mc.send(TOPIC, "git/update123")
+    mc.send(TOPIC, "git/update")
     mc.disconnect()
