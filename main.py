@@ -115,7 +115,7 @@ if __name__ == "__main__":
         if frame is not None:
             frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
-            cpu_temo = 0.9 * cpu_temp + 0.1 * get_cpu_temperature()
+            cpu_temp = 0.9 * cpu_temp + 0.1 * get_cpu_temperature()
 
             logs = [
                 f"CPU Serial: {cpu_serial}",
