@@ -87,6 +87,39 @@ def apply_sigmoid_contrast(frame, k=10, midpoint=0.5):
     # adjusted_frame = apply_sigmoid_contrast(frame, k=8, midpoint=0.5)
 
 
+def rank_normalize_image(img: np.ndarray) -> np.ndarray:
+    """
+    Performs fast rank-based histogram normalization on a grayscale image.
+    Maps unique intensity values to evenly spaced ranks in the [0, 255] range
+    using a Lookup Table (LUT).
+
+    Parameters:
+        img (np.ndarray): Input 2D grayscale image (uint8).
+
+    Returns:
+        np.ndarray: Normalized 2D grayscale image (uint8).
+    """
+    # 1. Extract unique pixel values present in the image
+    unique_vals = np.unique(img)
+    num_unique = len(unique_vals)
+
+    # Edge case: If image is empty or uniform (0 or 1 unique intensity)
+    if num_unique <= 1:
+        return img.copy()
+
+    # 2. Compute target normalized values (0 to 255) for each unique rank
+    ranks = np.linspace(0, 255, num_unique, dtype=np.uint8)
+
+    # 3. Initialize a 256-element Lookup Table (LUT)
+    lut = np.zeros(256, dtype=np.uint8)
+
+    # 4. Map target rank values to corresponding original pixel intensities
+    lut[unique_vals] = ranks
+
+    # 5. Fast replacement of pixel values using OpenCV C-implementation
+    return cv2.LUT(img, lut)
+
+
 if __name__ == "__main__":
     pin = OutputDevice(25, initial_value=False)
 
@@ -115,6 +148,8 @@ if __name__ == "__main__":
         if frame is not None:
             frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
+
+
             cpu_temp = 0.9 * cpu_temp + 0.1 * get_cpu_temperature()
 
             logs = [
@@ -130,9 +165,9 @@ if __name__ == "__main__":
             # Frame preprocessing
 
             frame = frame[:, :, 2]
-            frame = np.clip(frame, 35, 255)
+            #frame = np.clip(frame, 35, 255)
             # normalize to 0-255
-            frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
+            #frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
 
 
             if mode == 0:
@@ -140,8 +175,9 @@ if __name__ == "__main__":
             elif mode == 2:
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
             else:
+                frame = rank_normalize_image(frame)
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
-                colored_frame[frame <= 35] = (255, 55, 0)
+                #colored_frame[frame <= 35] = (255, 55, 0)
 
             frame = colored_frame
 
