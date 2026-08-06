@@ -165,19 +165,19 @@ if __name__ == "__main__":
             # Frame preprocessing
 
             frame = frame[:, :, 2]
-            #frame = np.clip(frame, 35, 255)
-            # normalize to 0-255
-            #frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
-
 
             if mode == 0:
+
+                frame = np.clip(frame, 35, 255)
+                frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
+                colored_frame[frame <= 1] = (255, 55, 0)
+
             elif mode == 2:
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
             else:
                 frame = rank_normalize_image(frame)
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
-                #colored_frame[frame <= 35] = (255, 55, 0)
 
             frame = colored_frame
 
