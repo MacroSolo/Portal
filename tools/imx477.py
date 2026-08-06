@@ -5,7 +5,7 @@ from picamera2 import Picamera2
 
 frames = deque(maxlen=30)
 
-def camera_loop():
+def camera_loop(Exposure=4096, Gain=8)
     global frames
     # Initialize the primary camera module
     picam0 = Picamera2(camera_num=0)
@@ -26,8 +26,8 @@ def camera_loop():
     picam0.set_controls({
         "AeEnable": False,
         "AwbEnable": False,
-        "ExposureTime": 4096,     # Exposure in microseconds
-        "AnalogueGain": 8,        # Fixed analog gain
+        "ExposureTime": Exposure,     # Exposure in microseconds
+        "AnalogueGain": Gain,        # Fixed analog gain
         "ColourGains": (1.5, 1.5)   # Fixed red/blue white balance multipliers
     })
 

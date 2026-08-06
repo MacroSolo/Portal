@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
     cpu_serial = get_cpu_serial()
 
-    thread = Thread(target=camera_loop, daemon=True)
+    thread = Thread(target=camera_loop, kwargs={"Exposure": 16000, "Gain": 3}, daemon=True)
     thread.start()
 
     pin.on()
@@ -174,6 +174,7 @@ if __name__ == "__main__":
                 colored_frame[frame <= 1] = (255, 55, 0)
 
             elif mode == 2:
+                frame = rank_normalize_image(frame)
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
             else:
                 frame = rank_normalize_image(frame)
