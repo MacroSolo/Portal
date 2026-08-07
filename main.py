@@ -168,17 +168,17 @@ if __name__ == "__main__":
             frame = frame[:, :, 2]
 
             frame = np.clip(frame, 35, 255)
-            frame = rank_normalize_image(frame)
-            colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
 
             if mode == 0:
-                switch_filter(ch=0, direction=1, pulse_ms=100)
+                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
 
             elif mode == 2:
-                switch_filter(ch=0, direction=2, pulse_ms=100)
+                frame = rank_normalize_image(frame)
+                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
 
             else:
-                pass
+                frame = rank_normalize_image(frame)
+                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
 
 
             frame = colored_frame
