@@ -1,6 +1,7 @@
 import cv2
 #from tools.mira220 import *
 from tools.imx477 import *
+from tools.motor_driver import *
 from threading import Thread
 
 import cv2
@@ -166,19 +167,19 @@ if __name__ == "__main__":
 
             frame = frame[:, :, 2]
 
-            if mode == 0:
+            frame = np.clip(frame, 35, 255)
+            frame = rank_normalize_image(frame)
+            colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
 
-                frame = np.clip(frame, 35, 255)
-                frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
-                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
-                colored_frame[frame <= 1] = (255, 55, 0)
+            if mode == 0:
+                switch_filter(ch=0, direction=1, pulse_ms=100)
 
             elif mode == 2:
-                frame = rank_normalize_image(frame)
-                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
+                switch_filter(ch=0, direction=2, pulse_ms=100)
+
             else:
-                frame = rank_normalize_image(frame)
-                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
+                pass
+
 
             frame = colored_frame
 
