@@ -174,7 +174,7 @@ if __name__ == "__main__":
 
             elif mode == 2:
                 frame = rank_normalize_image(frame)
-                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_JET)
+                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_RAINBOW)
 
             else:
                 frame = rank_normalize_image(frame)
