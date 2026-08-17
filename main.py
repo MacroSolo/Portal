@@ -139,7 +139,7 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
 
 
 if __name__ == "__main__":
-    lut_colormap = get_mpl_lut("gist_ncar")
+    lut_colormap = get_mpl_lut("viridis")
 
     pin = OutputDevice(25, initial_value=False)
 
