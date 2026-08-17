@@ -37,6 +37,8 @@ def get_mpl_lut(cmap_name: str) -> np.ndarray:
     return np.reshape(bgr_colors, (256, 1, 3))
 
 
+
+
 def terminal_log(img, logs=["log1", "log2", "log3"]):
     img = img.copy()
     for i, log in enumerate(logs):
@@ -134,7 +136,11 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
     return cv2.LUT(img, lut)
 
 
+
+
 if __name__ == "__main__":
+    lut_colormap = get_mpl_lut("inferno")
+
     pin = OutputDevice(25, initial_value=False)
 
     sw_9.when_pressed = on_switch_change
@@ -187,7 +193,7 @@ if __name__ == "__main__":
 
             elif mode == 2:
                 frame = rank_normalize_image(frame)
-                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_OCEAN)
+                colored_frame = cv2.applyColorMap(frame, lut_colormap)
 
             else:
                 frame = rank_normalize_image(frame)
