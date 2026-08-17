@@ -139,7 +139,8 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
 
 
 if __name__ == "__main__":
-    lut_colormap = get_mpl_lut("gnuplot")
+    lut_colormap = get_mpl_lut("CMRmap")
+
 
     pin = OutputDevice(25, initial_value=False)
 
