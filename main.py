@@ -3,6 +3,7 @@ import cv2
 from tools.imx477 import *
 from tools.motor_driver import *
 from threading import Thread
+import matplotlib.pyplot as plt
 
 import cv2
 import numpy as np
@@ -22,6 +23,18 @@ def on_switch_change():
     else:
         mode = 0
 
+
+def get_mpl_lut(cmap_name: str) -> np.ndarray:
+    """Convert a Matplotlib colormap into an OpenCV BGR LUT array (256x1x3 uint8)."""
+    cmap = plt.get_cmap(cmap_name)
+    # Sample 256 RGBA values in range [0.0, 1.0]
+    colors = cmap(np.linspace(0, 1, 256))
+    # Extract RGB, scale to [0, 255], and convert to uint8
+    rgb_colors = (colors[:, :3] * 255).astype(np.uint8)
+    # Convert RGB to BGR for OpenCV compatibility
+    bgr_colors = rgb_colors[:, ::-1]
+    # Reshape to required OpenCV LUT layout: (256, 1, 3)
+    return np.reshape(bgr_colors, (256, 1, 3))
 
 
 def terminal_log(img, logs=["log1", "log2", "log3"]):
