@@ -155,7 +155,7 @@ def command_main(topic, payload):
         cv2.putText(frames_copy, f"RECORDING", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
         cv2.imshow("IR", frames_copy)
         cv2.waitKey(1)
-        save_frame_series_s3(frames_copy, label, s3_client, bucket='merlin-ds', timestamp=int(time.time()))
+        #save_frame_series_s3(frames_copy, label, s3_client, bucket='merlin-ds', timestamp=int(time.time()))
 
 
 
