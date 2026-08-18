@@ -1,3 +1,4 @@
+import uuid
 import ssl
 import json
 import time
@@ -33,7 +34,7 @@ class MQTTClient:
         password: str,
         subscription: str | None = None,
         on_message=None,
-        client_id: str = "mqtt-client",
+        client_id: str = f"mqtt-client-{uuid.uuid4().hex[:8]}",
         qos: int = 1,
         keepalive: int = 60,
     ):
