@@ -146,7 +146,7 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
     return cv2.LUT(img, lut)
 
 
-def command(topic, payload):
+def command_main(topic, payload):
     print(f"[command] topic={topic}  payload={payload}")
     if payload.lower().startswith("s3/"):
         try:
@@ -162,16 +162,16 @@ def command(topic, payload):
 
 if __name__ == "__main__":
 
-    mqcmd = MQTTClient(
+    mqcmd_main = MQTTClient(
         host="521fa758f36d406f82650a9a06bdefc2.s1.eu.hivemq.cloud",
         port=8883,
         username="Merlin",
         password="Merlin6m",
         subscription="portal/commands",
-        on_message=command,
+        on_message=command_main,
     )
 
-    mqcmd.connect()
+    mqcmd_main.connect()
 
 
     lut_colormap = get_mpl_lut("CMRmap")
