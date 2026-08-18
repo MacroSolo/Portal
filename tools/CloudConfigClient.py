@@ -28,7 +28,7 @@ def get_config(url='https://6n37cqxfagcpkdulyw6ytfcmdu0jpouz.lambda-url.eu-centr
     if __name__ == "__main__":
         logo = open('merlin.txt').read()
     else:
-        logo = open(Path('~/Projects/Merlin/CCC/').expanduser() / 'merlin.txt').read()
+        logo = open(Path('~/Projects/Portal/tools/').expanduser() / 'merlin.txt').read()
     print(f"{logo}\n{' ' + str(config['Serial']) + ' ':⣿^73}\n" + "⣿" * 73)
 
 
