@@ -20,32 +20,38 @@ def open_s3_connection(credentials='/home/admin/Desktop/Merlin/credentials/s3-us
 
 
 def save_frame_series_s3(frames, label, s3_client, bucket, timestamp=0):
-    global_state["RECORDING"] = True
-    frames_copy = frames.copy()
 
-    def upload_frame(args):
-        idx, frame = args
-        success, buffer = cv2.imencode('.png', frame)
-        if not success:
-            print(f"Failed to encode frame {idx}")
-            return
+    if global_state["RECORDING"]:
+        print("Recording is already in progress. Please wait until the current recording is finished.")
+        return
 
-        key = f"{label}/{timestamp}_{idx}.png"
-        s3_client.put_object(
-            Bucket=bucket,
-            Key=key,
-            Body=buffer.tobytes(),
-            ContentType='image/png'
-        )
+    else:
+        global_state["RECORDING"] = True
+        frames_copy = frames.copy()
 
-    num_frames = len(frames_copy)
-    optimal_workers = min(32, num_frames)
+        def upload_frame(args):
+            idx, frame = args
+            success, buffer = cv2.imencode('.png', frame)
+            if not success:
+                print(f"Failed to encode frame {idx}")
+                return
 
-    with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
-        executor.map(upload_frame, enumerate(frames_copy))
+            key = f"{label}/{timestamp}_{idx}.png"
+            s3_client.put_object(
+                Bucket=bucket,
+                Key=key,
+                Body=buffer.tobytes(),
+                ContentType='image/png'
+            )
 
-    global_state["RECORDING"] = False
-    print(f"Saved {len(frames_copy)} frames to S3 bucket '{bucket}/{label}'")
+        num_frames = len(frames_copy)
+        optimal_workers = min(32, num_frames)
+
+        with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
+            executor.map(upload_frame, enumerate(frames_copy))
+
+        global_state["RECORDING"] = False
+        print(f"Saved {len(frames_copy)} frames to S3 bucket '{bucket}/{label}'")
 
 
 

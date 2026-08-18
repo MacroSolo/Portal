@@ -207,6 +207,7 @@ if __name__ == "__main__":
                 f"CPU Serial: {cpu_serial}",
                 f"CPU Temp: {int(cpu_temp)} C",
                 f"mode: {mode}",
+                f"camera: {global_state['camera']}",
                 f"frames: {len(frames)}",
                 f"MQTT: {global_state["last_mqtt_message"]}",
                 f"REC" if global_state['RECORDING'] else "",
