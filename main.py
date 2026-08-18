@@ -184,7 +184,7 @@ if __name__ == "__main__":
 
     cpu_serial = get_cpu_serial()
 
-    thread = Thread(target=camera_loop, kwargs={"Exposure": 2048, "Gain": 8}, daemon=True)
+    thread = Thread(target=camera_loop, kwargs={"Exposure": 10000, "Gain": 8}, daemon=True)
     thread.start()
 
     pin.on()
