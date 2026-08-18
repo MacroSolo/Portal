@@ -206,7 +206,7 @@ if __name__ == "__main__":
                 f"CPU Serial: {cpu_serial}",
                 f"CPU Temp: {int(cpu_temp)} C",
                 f"mode: {mode}",
-                f"REC" if RECORDING else "",
+                f"REC: {RECORDING}",
                 f"frames: {len(frames)}",
                 f"MQTT: {last_mqtt_message}",
             ]
