@@ -1,17 +1,27 @@
 import cv2
+import numpy as np
 #from tools.mira220 import *
 from tools.imx477 import *
 from tools.motor_driver import *
 from threading import Thread
 import matplotlib.pyplot as plt
 
-import cv2
-import numpy as np
+from CCC.CloudConfigClient import get_config
+config = get_config()
+
+from AWS.AWS_S3_recorder import *
+s3_client = boto3.client('s3',
+                         region_name='eu-central-1',
+                         aws_access_key_id=config['s3_id'],
+                         aws_secret_access_key=config['s3_secret'])
+
 
 from gpiozero import Button, OutputDevice
+
 mode = 0
 sw_9 = Button(18, pull_up=True)
 sw_11 = Button(15, pull_up=True)
+
 
 def on_switch_change():
     global mode
@@ -37,8 +47,6 @@ def get_mpl_lut(cmap_name: str) -> np.ndarray:
     return np.reshape(bgr_colors, (256, 1, 3))
 
 
-
-
 def terminal_log(img, logs=["log1", "log2", "log3"]):
     img = img.copy()
     for i, log in enumerate(logs):
@@ -58,6 +66,7 @@ def get_cpu_temperature():
     except Exception:
         temp_c = -1.0
     return temp_c
+
 
 def get_cpu_serial():
     cpu_serial = "Unknown"
@@ -136,13 +145,9 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
     return cv2.LUT(img, lut)
 
 
-
-
 if __name__ == "__main__":
 
-
     lut_colormap = get_mpl_lut("CMRmap")
-
 
     pin = OutputDevice(25, initial_value=False)
 
@@ -171,8 +176,6 @@ if __name__ == "__main__":
         if frame is not None:
             frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
-
-
             cpu_temp = 0.9 * cpu_temp + 0.1 * get_cpu_temperature()
 
             logs = [
@@ -182,8 +185,6 @@ if __name__ == "__main__":
                 f"",
                 f"frames: {len(frames)}",
             ]
-
-
 
             # Frame preprocessing
 
@@ -202,9 +203,7 @@ if __name__ == "__main__":
                 frame = rank_normalize_image(frame)
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
 
-
             frame = colored_frame
-
 
             frame = terminal_log(frame, logs)
 
@@ -215,8 +214,3 @@ if __name__ == "__main__":
 
     cv2.destroyAllWindows()
     pin.off()
-
-
-
-
-
