@@ -147,20 +147,22 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
 
 
 def command_main(topic, payload):
+    global RECORDING
     print(f"[command] topic={topic}  payload={payload}")
     if payload.lower().startswith("s3/"):
-
+        RECORDING = True
         label = payload.lower()[3:]
         frames_copy = frames.copy()
         frame_copy = frames_copy[-1]
         cv2.putText(frame_copy, f"RECORDING", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
-        cv2.imshow("IR", frame_copy)
-        cv2.waitKey(1000)
+        #cv2.imshow("IR", frame_copy)
+        #cv2.waitKey(1000)
         #save_frame_series_s3(frames_copy, label, s3_client, bucket='merlin-ds', timestamp=int(time.time()))
 
 
 
 if __name__ == "__main__":
+    RECORDING = False
 
     mqcmd_main = MQTTClient(
         host="521fa758f36d406f82650a9a06bdefc2.s1.eu.hivemq.cloud",
@@ -209,7 +211,7 @@ if __name__ == "__main__":
                 f"CPU Serial: {cpu_serial}",
                 f"CPU Temp: {int(cpu_temp)} C",
                 f"mode: {mode}",
-                f"",
+                f"REC" if RECORDING else "",
                 f"frames: {len(frames)}",
             ]
 
