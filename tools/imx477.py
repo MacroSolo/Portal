@@ -4,7 +4,7 @@ from collections import deque
 from picamera2 import Picamera2
 from tools.global_vars import global_state
 
-frames = deque(maxlen=60)
+frames = deque(maxlen=100)
 
 def camera_loop(Exposure=4096, Gain=8):
 
