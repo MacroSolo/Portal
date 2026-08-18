@@ -6,10 +6,10 @@ from tools.motor_driver import *
 from threading import Thread
 import matplotlib.pyplot as plt
 
-from CCC.CloudConfigClient import get_config
+from tools.CloudConfigClient import get_config
 config = get_config()
 
-from AWS.AWS_S3_recorder import *
+from tools.AWS_S3_recorder import *
 s3_client = boto3.client('s3',
                          region_name='eu-central-1',
                          aws_access_key_id=config['s3_id'],
