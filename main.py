@@ -145,6 +145,7 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
     return cv2.LUT(img, lut)
 
 
+
 if __name__ == "__main__":
 
     lut_colormap = get_mpl_lut("CMRmap")
@@ -159,7 +160,7 @@ if __name__ == "__main__":
 
     cpu_serial = get_cpu_serial()
 
-    thread = Thread(target=camera_loop, kwargs={"Exposure": 2048, "Gain": 8}, daemon=True)
+    thread = Thread(target=camera_loop, kwargs={"Exposure": 4096, "Gain": 8}, daemon=True)
     thread.start()
 
     pin.on()

@@ -3,7 +3,7 @@ import cv2
 from collections import deque
 from picamera2 import Picamera2
 
-frames = deque(maxlen=30)
+frames = deque(maxlen=60)
 
 def camera_loop(Exposure=4096, Gain=8):
     global frames
