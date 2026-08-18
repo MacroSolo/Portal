@@ -147,7 +147,7 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
 
 
 def command_main(topic, payload):
-    global last_mqtt_message
+    global last_mqtt_message, RECORDING
     last_mqtt_message = payload
     print(f"[command] topic={topic}  payload={payload}")
     if payload.lower().startswith("s3/"):
