@@ -147,6 +147,8 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
 
 
 def command_main(topic, payload):
+    global last_mqtt_message
+    last_mqtt_message = payload
     print(f"[command] topic={topic}  payload={payload}")
     if payload.lower().startswith("s3/"):
         save_frame_series_s3(frames, payload.lower()[3:], s3_client, bucket='merlin-ds', timestamp=int(time.time()))
@@ -155,6 +157,7 @@ def command_main(topic, payload):
 
 if __name__ == "__main__":
     RECORDING = False
+    last_mqtt_message = "None"
 
     mqcmd_main = MQTTClient(
         host="521fa758f36d406f82650a9a06bdefc2.s1.eu.hivemq.cloud",
@@ -205,6 +208,7 @@ if __name__ == "__main__":
                 f"mode: {mode}",
                 f"REC" if RECORDING else "",
                 f"frames: {len(frames)}",
+                f"MQTT: {last_mqtt_message}",
             ]
 
             # Frame preprocessing
