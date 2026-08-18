@@ -28,7 +28,7 @@ if __name__ == "__main__":
     PORT = 8883
     USERNAME = "Merlin"
     PASSWORD = "Merlin6m"
-    TOPIC = "portal/commands"
+    TOPIC = "portal/gitcommands"
 
     main_file = Path("~/Projects/Portal").expanduser() / "main.py"
     current_process = subprocess.Popen(['python3', main_file])

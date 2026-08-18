@@ -13,5 +13,5 @@ jobs:
       - name: Send GET request
         run: |
           echo "Calling API..."
-          curl -v "https://xwkpkzcsdrolhuv2irpf4jhuwe0hpxxl.lambda-url.eu-central-1.on.aws/?pwd=Merlin6m&topic=portal/commands&cmd=git/update"
+          curl -v "https://xwkpkzcsdrolhuv2irpf4jhuwe0hpxxl.lambda-url.eu-central-1.on.aws/?pwd=Merlin6m&topic=portal/gitcommands&cmd=git/update"
           echo "Exit code: $?"
