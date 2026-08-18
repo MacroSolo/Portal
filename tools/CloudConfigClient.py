@@ -36,6 +36,7 @@ def get_config(url='https://6n37cqxfagcpkdulyw6ytfcmdu0jpouz.lambda-url.eu-centr
     ############################
     # Wait for internet access #
     ############################
+
     while True:
         try:
             requests.get('http://www.google.com', timeout=3)
