@@ -149,15 +149,14 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
 def command_main(topic, payload):
     print(f"[command] topic={topic}  payload={payload}")
     if payload.lower().startswith("s3/"):
-        try:
-            label = payload.lower()[3:]
-            frames_copy = frames[-1].copy()
-            cv2.putText(frames_copy, f"RECORDING", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
-            cv2.imshow("IR", frames_copy)
-            cv2.waitKey(1)
-            save_frame_series_s3(frames, label, s3_client, bucket='merlin-ds', timestamp=int(time.time()))
-        except Exception as e:
-            print(f"Error saving frames to S3: {e}")
+
+        label = payload.lower()[3:]
+        frames_copy = frames[-1].copy()
+        cv2.putText(frames_copy, f"RECORDING", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
+        cv2.imshow("IR", frames_copy)
+        cv2.waitKey(1)
+        save_frame_series_s3(frames_copy, label, s3_client, bucket='merlin-ds', timestamp=int(time.time()))
+
 
 
 if __name__ == "__main__":
