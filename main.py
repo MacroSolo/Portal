@@ -158,6 +158,16 @@ def command(topic, payload):
 
 if __name__ == "__main__":
 
+    mqcmd = MQTTClient(
+        host="521fa758f36d406f82650a9a06bdefc2.s1.eu.hivemq.cloud",
+        port=8883,
+        username="Merlin",
+        password="Merlin6m",
+        subscription="portal/commands",
+        on_message=command,
+    )
+
+    mqcmd.connect()
 
 
     lut_colormap = get_mpl_lut("CMRmap")
