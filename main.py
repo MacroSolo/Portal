@@ -2,9 +2,10 @@ import cv2
 import numpy as np
 #from tools.mira220 import *
 from tools.imx477 import *
-from tools.motor_driver import *
+#from tools.motor_driver import *
 from threading import Thread
 import matplotlib.pyplot as plt
+from MQTT.MQTT_connector import *
 
 from tools.CloudConfigClient import get_config
 config = get_config()
@@ -145,8 +146,19 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
     return cv2.LUT(img, lut)
 
 
+def command(topic, payload):
+    print(f"[command] topic={topic}  payload={payload}")
+    if payload.lower().startswith("s3"):
+        try:
+            label = payload.lower()[3:]
+            save_frame_series_s3(frames, label, s3_client, bucket='merlin-ds', timestamp=int(time.time()))
+        except Exception as e:
+            print(f"Error saving frames to S3: {e}")
+
 
 if __name__ == "__main__":
+
+
 
     lut_colormap = get_mpl_lut("CMRmap")
 
