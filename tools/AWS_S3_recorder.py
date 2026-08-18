@@ -3,6 +3,7 @@ import boto3
 import cv2
 from concurrent.futures import ThreadPoolExecutor
 import io
+from tools.global_vars import global_state
 
 
 def open_s3_connection(credentials='/home/admin/Desktop/Merlin/credentials/s3-user_accessKeys.csv'):
@@ -19,8 +20,7 @@ def open_s3_connection(credentials='/home/admin/Desktop/Merlin/credentials/s3-us
 
 
 def save_frame_series_s3(frames, label, s3_client, bucket, timestamp=0):
-    global RECORDING
-    RECORDING = "in progress.."
+    global_state["RECORDING"] = True
     frames_copy = frames.copy()
 
     def upload_frame(args):
@@ -44,7 +44,7 @@ def save_frame_series_s3(frames, label, s3_client, bucket, timestamp=0):
     with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
         executor.map(upload_frame, enumerate(frames_copy))
 
-    RECORDING = "..done"
+    global_state["RECORDING"] = False
     print(f"Saved {len(frames_copy)} frames to S3 bucket '{bucket}/{label}'")
 
 

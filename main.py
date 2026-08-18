@@ -6,6 +6,7 @@ from tools.imx477 import *
 from threading import Thread
 import matplotlib.pyplot as plt
 from MQTT.MQTT_connector import *
+from tools.global_vars import global_state
 
 from tools.CloudConfigClient import get_config
 config = get_config()
@@ -18,6 +19,8 @@ s3_client = boto3.client('s3',
 
 
 from gpiozero import Button, OutputDevice
+
+
 
 mode = 0
 sw_9 = Button(18, pull_up=True)
@@ -147,8 +150,7 @@ def rank_normalize_image(img: np.ndarray) -> np.ndarray:
 
 
 def command_main(topic, payload):
-    global last_mqtt_message, RECORDING
-    last_mqtt_message = payload
+    global_state["last_mqtt_message"] = payload
     print(f"[command] topic={topic}  payload={payload}")
     if payload.lower().startswith("s3/"):
         save_frame_series_s3(frames, payload.lower()[3:], s3_client, bucket='merlin-ds', timestamp=int(time.time()))
@@ -156,8 +158,7 @@ def command_main(topic, payload):
 
 
 if __name__ == "__main__":
-    RECORDING = False
-    last_mqtt_message = "None"
+
 
     mqcmd_main = MQTTClient(
         host="521fa758f36d406f82650a9a06bdefc2.s1.eu.hivemq.cloud",
@@ -206,9 +207,9 @@ if __name__ == "__main__":
                 f"CPU Serial: {cpu_serial}",
                 f"CPU Temp: {int(cpu_temp)} C",
                 f"mode: {mode}",
-                f"REC: {RECORDING}",
+                f"REC: {global_state['RECORDING']}",
                 f"frames: {len(frames)}",
-                f"MQTT: {last_mqtt_message}",
+                f"MQTT: {global_state["last_mqtt_message"]}",
             ]
 
             # Frame preprocessing
