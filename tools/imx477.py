@@ -42,8 +42,8 @@ def camera_loop(Exposure=4096, Gain=8):
             counter += 1
             elapsed = time.time() - start
 
-            if elapsed >= 1.0:
-                global_state["camera"]["fps"] = counter / elapsed
+            if elapsed >= 10:
+                global_state["camera"]["fps"] = int(counter / elapsed)
                 counter = 0
                 start = time.time()
 
