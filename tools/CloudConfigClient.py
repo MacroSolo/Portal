@@ -32,6 +32,7 @@ def get_config(url='https://6n37cqxfagcpkdulyw6ytfcmdu0jpouz.lambda-url.eu-centr
     print(f"{logo}\n{' ' + str(config['Serial']) + ' ':⣿^73}\n" + "⣿" * 73)
 
 
+
     ############################
     # Wait for internet access #
     ############################
