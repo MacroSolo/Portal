@@ -151,9 +151,10 @@ def command_main(topic, payload):
     if payload.lower().startswith("s3/"):
 
         label = payload.lower()[3:]
-        frames_copy = frames[-1].copy()
-        cv2.putText(frames_copy, f"RECORDING", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
-        cv2.imshow("IR", frames_copy)
+        frames_copy = frames.copy()
+        frame_copy = frames_copy[-1]
+        cv2.putText(frame_copy, f"RECORDING", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
+        cv2.imshow("IR", frame_copy)
         cv2.waitKey(1)
         #save_frame_series_s3(frames_copy, label, s3_client, bucket='merlin-ds', timestamp=int(time.time()))
 
