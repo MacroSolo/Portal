@@ -165,6 +165,8 @@ def handle_encoder_change(mode: str, value):
         camera.set_gain(value)
 
 if __name__ == "__main__":
+    camera = CameraStream(default_exposure=4096, default_gain=8, buffer_size=100)
+    camera.start()
 
     # Professional configuration design using 'options' and 'default_value'
     ENCODER_CONFIG = {
@@ -209,8 +211,7 @@ if __name__ == "__main__":
 
     cpu_serial = get_cpu_serial()
 
-    camera = CameraStream(default_exposure=4096, default_gain=8, buffer_size=100)
-    camera.start()
+
 
     # Create a named window and set it to full screen mode
     window_name = "IR"
