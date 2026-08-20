@@ -29,12 +29,20 @@ class CameraStream:
         self.picam0.configure(config0)
 
     def set_exposure(self, exposure_time: int):
-        """Dynamically update camera exposure time in microseconds."""
+        """Dynamically update exposure time and auto-adjust frame duration limits."""
         self.exposure = exposure_time
         global_state["camera"]["exposure"] = self.exposure
 
         if self.is_running:
-            self.picam0.set_controls({"ExposureTime": self.exposure})
+            # Minimum frame duration must be equal to or greater than exposure time + overhead
+            min_frame_duration = exposure_time + 1000
+            # Set max frame duration to a large value (e.g., 20 seconds) to allow long exposures
+            max_frame_duration = max(20_000_000, min_frame_duration)
+
+            self.picam0.set_controls({
+                "FrameDurationLimits": (min_frame_duration, max_frame_duration),
+                "ExposureTime": self.exposure
+            })
 
     def set_gain(self, gain_value: float):
         """Dynamically update camera analogue gain."""
