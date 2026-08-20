@@ -23,8 +23,8 @@ class CameraStream:
 
         self.picam0 = Picamera2(camera_num=0)
         config0 = self.picam0.create_preview_configuration(
-            #main={"format": "BGR888", "size": (800, 1280)},
-            main={"format": "BGR888", "size": (3040, 4056)}, # 12.3 million pixels: 4056(H) x 3040(V)
+            main={"format": "BGR888", "size": (800, 1280)},
+            #main={"format": "BGR888", "size": (3040, 4056)}, # 12.3 million pixels: 4056(H) x 3040(V)
             buffer_count=2,
         )
         self.picam0.configure(config0)
