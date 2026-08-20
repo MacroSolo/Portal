@@ -153,7 +153,7 @@ def command_main(topic, payload):
     global_state["last_mqtt_message"] = payload
     print(f"[command] topic={topic}  payload={payload}")
     if payload.lower().startswith("s3/"):
-        save_frame_series_s3(frames, payload.lower()[3:], s3_client, bucket='merlin-ds', timestamp=int(time.time()))
+        save_frame_series_s3(camera.frames, payload.lower()[3:], s3_client, bucket='merlin-ds', timestamp=int(time.time()))
 
 
 
@@ -189,6 +189,7 @@ if __name__ == "__main__":
     lut_colormap = get_mpl_lut("CMRmap")
 
     pin = OutputDevice(25, initial_value=False)
+    pin.on()
 
     sw_9.when_pressed = on_switch_change
     sw_9.when_released = on_switch_change
@@ -198,10 +199,9 @@ if __name__ == "__main__":
 
     cpu_serial = get_cpu_serial()
 
-    thread = Thread(target=camera_loop, kwargs={"Exposure": 8192, "Gain": 8}, daemon=True)
-    thread.start()
+    camera = CameraStream(default_exposure=4096, default_gain=8, buffer_size=100)
+    camera.start_loop()
 
-    pin.on()
 
     # Create a named window and set it to full screen mode
     window_name = "IR"
@@ -210,7 +210,7 @@ if __name__ == "__main__":
 
     cpu_temp = get_cpu_temperature()
     while True:
-        frame = frames[-1] if frames else None
+        frame = camera.frames[-1] if camera.frames else None
 
         if frame is not None:
             frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
@@ -222,7 +222,7 @@ if __name__ == "__main__":
                 f"CPU Temp: {int(cpu_temp)} C",
                 f"mode: {mode}",
                 f"camera: {global_state['camera']}",
-                f"frames: {len(frames)}",
+                f"frames: {len(camera.frames)}",
                 f"MQTT: {global_state["last_mqtt_message"]}",
                 f"REC" if global_state['RECORDING'] else "",
             ]

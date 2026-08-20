@@ -1,94 +1,98 @@
 import time
-import cv2
 from collections import deque
 from picamera2 import Picamera2
 from tools.global_vars import global_state
 
-frames = deque(maxlen=100)
 
-def camera_loop(Exposure=4096, Gain=8):
+class CameraStream:
+    """Manages Picamera2 streaming, frame buffer deque, and controls hardware parameters."""
 
-    global_state["camera"]["exposure"] = Exposure
-    global_state["camera"]["gain"] = Gain
+    def __init__(self, default_exposure=4096, default_gain=8, buffer_size=100):
+        self.exposure = default_exposure
+        self.gain = default_gain
+        self.frames = deque(maxlen=buffer_size)
+        self.is_running = False
 
-    picam0 = Picamera2(camera_num=0)
+        # Ensure global state dictionary structure exists
+        if "camera" not in global_state or not isinstance(global_state["camera"], dict):
+            global_state["camera"] = {}
 
-    config0 = picam0.create_preview_configuration(
-        main={"format": "BGR888", "size": (800, 1280)},
-        buffer_count=2,
-    )
+        # Set default values in global state
+        global_state["camera"]["exposure"] = self.exposure
+        global_state["camera"]["gain"] = self.gain
+        global_state["camera"]["fps"] = 0
 
-    picam0.configure(config0)
-    picam0.start()
+        # Initialize Picamera2
+        self.picam0 = Picamera2(camera_num=0)
+        config0 = self.picam0.create_preview_configuration(
+            main={"format": "BGR888", "size": (800, 1280)},
+            buffer_count=2,
+        )
+        self.picam0.configure(config0)
 
-    time.sleep(0.5)
+    def set_exposure(self, exposure_time: int):
+        """Dynamically update camera exposure time in microseconds."""
+        self.exposure = exposure_time
+        global_state["camera"]["exposure"] = self.exposure
 
-    picam0.set_controls({
-        "AeEnable": False,
-        "AwbEnable": False,
-        "ExposureTime": Exposure,
-        "AnalogueGain": Gain,
-        "ColourGains": (1.5, 1.5)
-    })
+        if self.is_running:
+            self.picam0.set_controls({"ExposureTime": self.exposure})
 
-    counter = 0
-    start = time.time()
+    def set_gain(self, gain_value: float):
+        """Dynamically update camera analogue gain."""
+        self.gain = gain_value
+        global_state["camera"]["gain"] = self.gain
 
-    try:
-        while True:
-            frame0 = picam0.capture_array()
-            frames.append(frame0)
+        if self.is_running:
+            self.picam0.set_controls({"AnalogueGain": self.gain})
 
-            counter += 1
-            elapsed = time.time() - start
+    def start_loop(self):
+        """Start hardware stream and run continuous frame capture loop."""
+        self.picam0.start()
+        time.sleep(0.5)
 
-            if elapsed >= 1.0:
-                global_state["camera"]["fps"] = int(counter / elapsed)
-                counter = 0
-                start = time.time()
+        # Apply initial hardware settings
+        self.picam0.set_controls({
+            "AeEnable": False,
+            "AwbEnable": False,
+            "ExposureTime": self.exposure,
+            "AnalogueGain": self.gain,
+            "ColourGains": (1.5, 1.5)
+        })
 
-    finally:
-        picam0.stop()
+        self.is_running = True
+        counter = 0
+        start_time = time.time()
 
+        try:
+            while self.is_running:
+                frame0 = self.picam0.capture_array()
+                self.frames.append(frame0)
 
-def camera_loop_0(Exposure=4096, Gain=8):
-    global frames
-    # Initialize the primary camera module
-    picam0 = Picamera2(camera_num=0)
+                # Update real-time FPS calculation every second
+                counter += 1
+                elapsed = time.time() - start_time
+                if elapsed >= 1.0:
+                    global_state["camera"]["fps"] = int(counter / elapsed)
+                    counter = 0
+                    start_time = time.time()
 
-    # Set format to BGR888 and resolution to 1280x800
-    config0 = picam0.create_preview_configuration(
-        main={"format": "BGR888", "size": (800, 1280)},
-        buffer_count=2,
-    )
-    picam0.configure(config0)
-    picam0.start()
+        finally:
+            self.stop()
 
-    # Wait briefly to ensure the camera hardware pipeline starts
-    time.sleep(0.5)
-
-    # Completely lock exposure, gain, and white balance
-    # ColourGains is set to fixed red/blue gains to prevent AWB color-shifts
-    picam0.set_controls({
-        "AeEnable": False,
-        "AwbEnable": False,
-        "ExposureTime": Exposure,     # Exposure in microseconds
-        "AnalogueGain": Gain,        # Fixed analog gain
-        "ColourGains": (1.5, 1.5)   # Fixed red/blue white balance multipliers
-    })
-
-
-    try:
-        while True:
-            # Capture frame as a NumPy array
-            frame0 = picam0.capture_array()
-            frames.append(frame0)
-
-    finally:
-        # Clean up resources
-        picam0.stop()
+    def stop(self):
+        """Safely stop hardware stream."""
+        self.is_running = False
+        self.picam0.stop()
 
 
-
+# --- Example Usage ---
 if __name__ == "__main__":
-    camera_loop()
+    camera = CameraStream()
+
+    # Call these setter methods directly whenever your encoder turns:
+    # camera.set_exposure(10000)
+    # camera.set_gain(4.0)
+
+    # Start capture (blocking loop)
+    # camera.start_loop()
