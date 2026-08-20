@@ -1,12 +1,13 @@
 import cv2
 import numpy as np
-#from tools.mira220 import *
-from tools.imx477 import *
-#from tools.motor_driver import *
 from threading import Thread
 import matplotlib.pyplot as plt
+
+#from tools.mira220 import *
+from tools.imx477 import *
+
 from MQTT.MQTT_connector import *
-from tools.global_vars import global_state
+from tools.my_encoder import EncoderController
 
 from tools.CloudConfigClient import get_config
 config = get_config()
@@ -18,10 +19,9 @@ s3_client = boto3.client('s3',
                          aws_secret_access_key=config['s3_secret'])
 
 
+
+
 from gpiozero import Button, OutputDevice
-
-
-
 mode = 0
 sw_9 = Button(18, pull_up=True)
 sw_11 = Button(15, pull_up=True)
@@ -158,6 +158,20 @@ def command_main(topic, payload):
 
 
 if __name__ == "__main__":
+
+    # Professional configuration design using 'options' and 'default_value'
+    ENCODER_CONFIG = {
+        "exposure": {
+            "default_value": 4096,
+            "options": (64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536)
+        },
+        "gain": {
+            "default_value": 8,
+            "options": (1, 2, 4, 8, 16)
+        },
+    }
+
+    controller = EncoderController(mode_config=ENCODER_CONFIG)
 
 
     mqcmd_main = MQTTClient(
