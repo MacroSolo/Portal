@@ -1,8 +1,16 @@
 from signal import pause
 from gpiozero import RotaryEncoder, Button
 
-from tools.global_vars import global_state
-
+try:
+    from tools.global_vars import global_state
+except ImportError:
+    # If the import fails, define a default global_state for testing purposes
+    global_state = {
+        "encoder": {
+            "value": 0,
+            "mode": 1
+        }
+    }
 
 
 class EncoderController:
