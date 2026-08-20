@@ -199,10 +199,8 @@ if __name__ == "__main__":
 
     cpu_serial = get_cpu_serial()
 
-    print('bug0')
     camera = CameraStream(default_exposure=4096, default_gain=8, buffer_size=100)
-    camera.start_loop()
-    print('bug1')
+    camera.start()
 
     # Create a named window and set it to full screen mode
     window_name = "IR"
