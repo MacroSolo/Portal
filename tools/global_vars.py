@@ -5,7 +5,9 @@ global_state = {
         "exposure": None,
         "gain": None,
         "fps": None
-            },
-
-        }
-
+    },
+    "encoder": {
+        "mode": 1,
+        "value": 0
+    }
+}
