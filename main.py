@@ -210,6 +210,7 @@ if __name__ == "__main__":
 
     cpu_temp = get_cpu_temperature()
     while True:
+        print(len(camera.frames))
         frame = camera.frames[-1] if camera.frames else None
 
         if frame is not None:
