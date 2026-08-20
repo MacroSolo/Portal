@@ -1,6 +1,7 @@
 from signal import pause
 from gpiozero import RotaryEncoder, Button
 
+
 try:
     from tools.global_vars import global_state
 except ImportError:
@@ -9,10 +10,9 @@ except ImportError:
 
 
 class EncoderController:
-    """Configurable Rotary Encoder Controller that manages predefined modes,
+    """Configurable Rotary Encoder Controller.
 
-    maintains option memory per mode, supports explicit default values,
-    and updates global state dictionary in real time.
+    Automatically initializes missing dictionary keys in global_state.
     """
 
     def __init__(self, mode_config: dict, pin_a=17, pin_b=27, pin_c=22, state_dict=global_state):
@@ -23,32 +23,29 @@ class EncoderController:
         if not self.modes_list:
             raise ValueError("mode_config dictionary cannot be empty.")
 
-        # Dictionary to store active index for each mode
+        # Ensure required top-level keys exist in global_state automatically
+        if "camera" not in self.state or not isinstance(self.state["camera"], dict):
+            self.state["camera"] = {}
+
+        if "encoder" not in self.state or not isinstance(self.state["encoder"], dict):
+            self.state["encoder"] = {}
+
+        # Store option index per parameter
         self.mode_indices = {}
 
-        # Parse configuration and set initial indices based on default values
-        for mode_key, mode_data in self.mode_config.items():
-            options = mode_data.get("options", ())
-            default_val = mode_data.get("default_value")
+        for param_key, param_data in self.mode_config.items():
+            options = param_data.get("options", ())
+            default_val = param_data.get("default_value")
 
             if not options:
-                raise ValueError(f"Mode '{mode_key}' must contain a non-empty 'options' tuple/list.")
+                raise ValueError(f"Parameter '{param_key}' must have non-empty 'options'.")
 
             if default_val is not None and default_val in options:
-                self.mode_indices[mode_key] = options.index(default_val)
+                self.mode_indices[param_key] = options.index(default_val)
             else:
-                # Fallback to the first available option if default is invalid or missing
-                self.mode_indices[mode_key] = 0
+                self.mode_indices[param_key] = 0
 
-        # Snapshot initial indices for state reset capabilities
-        self._default_indices = self.mode_indices.copy()
-        self._default_mode_index = 0
-
-        # Set initial active mode index
-        self.current_mode_index = self._default_mode_index
-
-        # Sync values with global_state
-        self._update_global_state()
+        self.current_mode_index = 0
 
         # Initialize hardware components
         self.encoder = RotaryEncoder(a=pin_a, b=pin_b, max_steps=0)
@@ -59,53 +56,51 @@ class EncoderController:
         self.encoder.when_rotated_counter_clockwise = self._on_counter_clockwise
         self.button.when_pressed = self._on_button_click
 
+        # Initial sync to populate global_state keys
+        self._sync_all_to_global_state()
+
     @property
     def current_mode(self):
-        """Get the current mode string key."""
+        """Get current target camera parameter name (e.g., 'exposure')."""
         return self.modes_list[self.current_mode_index]
 
-    def _update_global_state(self):
-        """Synchronize class internal state with the global state dictionary."""
-        active_mode = self.current_mode
-        value_index = self.mode_indices[active_mode]
-        active_value = self.mode_config[active_mode]["options"][value_index]
+    def _sync_all_to_global_state(self):
+        """Writes current selected options directly into global_state['camera'] and ['encoder']."""
+        for param_key, idx in self.mode_indices.items():
+            value = self.mode_config[param_key]["options"][idx]
+            self.state["camera"][param_key] = value
 
+        # Update active encoder status metadata safely
+        active_mode = self.current_mode
         self.state["encoder"]["mode"] = active_mode
-        self.state["encoder"]["value"] = active_value
+        self.state["encoder"]["value"] = self.state["camera"][active_mode]
 
     def _on_clockwise(self):
-        """Move to the next option within the active mode."""
+        """Increase the active parameter value."""
         active_mode = self.current_mode
         options_count = len(self.mode_config[active_mode]["options"])
         current_idx = self.mode_indices[active_mode]
 
         if current_idx < options_count - 1:
             self.mode_indices[active_mode] += 1
-            self._update_global_state()
-            print(f"[{active_mode}] Next -> {self.state['encoder']['value']}")
+            self._sync_all_to_global_state()
+            print(f"Updated {active_mode} -> {self.state['camera'][active_mode]}")
 
     def _on_counter_clockwise(self):
-        """Move to the previous option within the active mode."""
+        """Decrease the active parameter value."""
         active_mode = self.current_mode
         current_idx = self.mode_indices[active_mode]
 
         if current_idx > 0:
             self.mode_indices[active_mode] -= 1
-            self._update_global_state()
-            print(f"[{active_mode}] Prev -> {self.state['encoder']['value']}")
+            self._sync_all_to_global_state()
+            print(f"Updated {active_mode} -> {self.state['camera'][active_mode]}")
 
     def _on_button_click(self):
-        """Cycle sequentially to the next mode."""
+        """Switch active parameter (exposure -> gain -> fps)."""
         self.current_mode_index = (self.current_mode_index + 1) % len(self.modes_list)
-        self._update_global_state()
-        print(f"Switched Mode -> {self.state['encoder']['mode']} | Current Value: {self.state['encoder']['value']}")
-
-    def reset_to_defaults(self):
-        """Reset mode positions back to their defined default settings."""
-        self.mode_indices = self._default_indices.copy()
-        self.current_mode_index = self._default_mode_index
-        self._update_global_state()
-        print("Encoder state reset to initial default values.")
+        self._sync_all_to_global_state()
+        print(f"Switched control to: {self.current_mode} (Value: {self.state['encoder']['value']})")
 
 
 # --- Example Usage ---
