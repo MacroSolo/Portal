@@ -222,7 +222,7 @@ if __name__ == "__main__":
     while True:
         frame = camera.frames[-1] if camera.frames else None
         # fast resize to 1280x800 for display, but keep original frame for saving
-        frame = cv2.resize(frame, (1280, 800), interpolation=cv2.INTER_AREA) if frame is not None else None
+        frame = cv2.resize(frame, (800, 1280), interpolation=cv2.INTER_AREA) if frame is not None else None
 
         if frame is not None:
             frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
