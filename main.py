@@ -156,6 +156,13 @@ def command_main(topic, payload):
         save_frame_series_s3(camera.frames, payload.lower()[3:], s3_client, bucket='merlin-ds', timestamp=int(time.time()))
 
 
+def handle_encoder_change(mode: str, value):
+    print(f"[Encoder Event] Mode: {mode} -> Value: {value}")
+
+    if mode == "exposure":
+        camera.set_exposure(value)
+    elif mode == "gain":
+        camera.set_gain(value)
 
 if __name__ == "__main__":
 
@@ -171,7 +178,10 @@ if __name__ == "__main__":
         },
     }
 
-    controller = EncoderController(mode_config=ENCODER_CONFIG)
+    encoder = EncoderController(
+        mode_config=ENCODER_CONFIG,
+        on_change_callback=handle_encoder_change
+    )
 
 
     mqcmd_main = MQTTClient(
