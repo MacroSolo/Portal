@@ -167,8 +167,7 @@ def handle_encoder_change(mode: str, value):
         camera.set_gain(value)
 
 if __name__ == "__main__":
-    camera = CameraStream(default_exposure=4096, default_gain=8, buffer_size=100)
-    camera.start()
+
 
     # Professional configuration design using 'options' and 'default_value'
     ENCODER_CONFIG = {
@@ -181,6 +180,10 @@ if __name__ == "__main__":
             "options": (1, 2, 4, 8, 16)
         },
     }
+
+    camera = CameraStream(default_exposure=ENCODER_CONFIG['exposure']["default_value"],
+                          default_gain=ENCODER_CONFIG['gain']["default_value"], buffer_size=100)
+    camera.start()
 
     encoder = EncoderController(
         mode_config=ENCODER_CONFIG,
