@@ -23,10 +23,12 @@ s3_client = boto3.client('s3',
 
 
 
-from gpiozero import Button, OutputDevice
+from gpiozero import Button, OutputDevice, GPIODevice
 mode = 0
 sw_9 = Button(18, pull_up=True)
 sw_11 = Button(15, pull_up=True)
+
+sync_exp = GPIODevice(17, pull_up=True)
 
 
 def on_switch_change():
