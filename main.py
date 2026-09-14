@@ -200,6 +200,7 @@ if __name__ == "__main__":
         format="BGR888", )
     camera.start()
 
+    exit()
 
     encoder = EncoderController(
         mode_config=ENCODER_CONFIG,
