@@ -11,8 +11,8 @@ import lgpio
 
 # Configuration Parameters
 GPIO_PIN = 11  # BCM GPIO11 (Physical Pin 23)
-PWM_FREQ_HZ = 10  # Trigger frequency: 10 Hz (100 ms frame cycle = 10 FPS)
-INITIAL_DUTY_PCT = 30.0  # 30% duty cycle = 30 ms HIGH pulse duration (exposure time)
+PWM_FREQ_HZ = 30  # Trigger frequency: 10 Hz (100 ms frame cycle = 10 FPS)
+INITIAL_DUTY_PCT = 10.0  # 30% duty cycle = 30 ms HIGH pulse duration (exposure time)
 
 
 def main():
