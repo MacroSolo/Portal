@@ -173,11 +173,11 @@ if __name__ == "__main__":
     # Professional configuration design using 'options' and 'default_value'
     ENCODER_CONFIG = {
         "exposure": {
-            "default_value": 4096,
+            "default_value": 8192,
             "options": (64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152)
         },
         "gain": {
-            "default_value": 8,
+            "default_value": 1,
             "options": (1, 2, 4, 8, 16)
         },
     }
