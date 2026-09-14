@@ -1,4 +1,8 @@
+print('testing main.py')
+
 exit()
+
+
 
 import cv2
 import numpy as np
