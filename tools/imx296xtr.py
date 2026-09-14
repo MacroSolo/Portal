@@ -67,6 +67,7 @@ def main():
     try:
         while True:
             key = cv2.waitKey(1) & 0xFF
+            print(f"Key pressed: {key} (char: {chr(key) if 32 <= key <= 126 else 'non-printable'})")
 
             if key in (27, ord("q")):  # ESC or 'q'
                 break
