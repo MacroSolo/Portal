@@ -98,32 +98,46 @@ class CameraStream:
     # ----------------------------------------------------------------------
 
     def set_exposure(self, exposure_time: int):
-        """
-        Change exposure time in microseconds.
-
-        Example:
-            4096 = 4.096 ms
-        """
-
         exposure_time = int(exposure_time)
-
-        # Exposure must be shorter than frame period.
-        max_exposure = self.frame_duration - 100
-
-        if exposure_time > max_exposure:
-            exposure_time = max_exposure
 
         if exposure_time < 1:
             exposure_time = 1
 
         self.exposure = exposure_time
 
+        # Normal frame duration according to target FPS
+        target_frame_duration = int(
+            1_000_000 / self.target_fps
+        )
+
+        # Exposure must fit into frame duration
+        self.frame_duration = max(
+            target_frame_duration,
+            exposure_time + 1000
+        )
+
         global_state["camera"]["exposure"] = self.exposure
 
         if self.is_running:
             self.picam0.set_controls({
+                "FrameDurationLimits": (
+                    self.frame_duration,
+                    self.frame_duration,
+                ),
                 "ExposureTime": self.exposure,
             })
+
+        actual_fps_limit = 1_000_000 / self.frame_duration
+
+        global_state["camera"]["fps_limit"] = actual_fps_limit
+
+        print(
+            f"[Camera] Exposure: {self.exposure} us "
+            f"({self.exposure / 1000:.3f} ms), "
+            f"FrameDuration: {self.frame_duration} us, "
+            f"FPS limit: {actual_fps_limit:.2f}"
+        )
+
 
     def set_gain(self, gain_value: float):
         """
