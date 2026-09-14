@@ -34,13 +34,13 @@ class TriggeredCameraStream:
     BLACK_BAR_HEIGHT = (OUTPUT_HEIGHT - ROI_HEIGHT) // 2
 
     def __init__(
-            self,
-            default_exposure=4096,
-            default_gain=1.0,
-            expected_fps=60,
-            buffer_size=100,
-            size=None,
-            format="BGR888",
+        self,
+        default_exposure=4096,
+        default_gain=1.0,
+        expected_fps=60,
+        buffer_size=100,
+        size=None,
+        format="BGR888",
     ):
         self.exposure = int(default_exposure)
         self.gain = float(default_gain)
@@ -59,14 +59,14 @@ class TriggeredCameraStream:
         self.is_running = False
         self._thread = None
 
-        # Frame duration estimation for internal safeguards (in us)
+        # Estimating frame duration for sanity limits (in us)
         self.frame_duration = int(1_000_000 / self.target_fps)
 
         if self.exposure >= self.frame_duration:
             self.exposure = self.frame_duration - 100
 
         # ------------------------------------------------------------------
-        # Camera ROI
+        # Camera ROI Calculation
         # ------------------------------------------------------------------
 
         self.roi_x = (self.SENSOR_WIDTH - self.ROI_WIDTH) // 2
@@ -74,7 +74,7 @@ class TriggeredCameraStream:
         self.roi = (self.roi_x, self.roi_y, self.ROI_WIDTH, self.ROI_HEIGHT)
 
         # ------------------------------------------------------------------
-        # Global state
+        # Global state registry
         # ------------------------------------------------------------------
 
         if "camera" not in global_state or not isinstance(global_state["camera"], dict):
@@ -92,24 +92,35 @@ class TriggeredCameraStream:
         global_state["camera"]["external_trigger"] = True
 
         # ------------------------------------------------------------------
-        # Camera Initialization (No GUI preview to prevent close crashes)
+        # Camera Initialization
         # ------------------------------------------------------------------
 
         self.picam0 = Picamera2(camera_num=0)
 
-        # Build video configuration without native GUI window attachment
+        # Configure stream without explicit window/preview bindings
         config = self.picam0.create_video_configuration(
             main={
                 "format": self.format,
                 "size": self.size,
             },
-            buffer_count=6,  # Increased buffer pool for external sync bursts
+            buffer_count=6,
         )
 
         self.picam0.configure(config)
 
     # ----------------------------------------------------------------------
-    # Camera controls
+    # Context Manager Protocol
+    # ----------------------------------------------------------------------
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    # ----------------------------------------------------------------------
+    # Dynamic Controls
     # ----------------------------------------------------------------------
 
     def set_exposure(self, exposure_time: int):
@@ -135,7 +146,7 @@ class TriggeredCameraStream:
             self.picam0.set_controls({"AnalogueGain": self.gain})
 
     def set_fps(self, fps: float):
-        """Update expected target FPS (metadata only, controlled by HW trigger)."""
+        """Update target FPS tracking (Hardware trigger governs physical rate)."""
         if fps <= 0:
             raise ValueError("FPS must be greater than zero")
 
@@ -144,33 +155,26 @@ class TriggeredCameraStream:
         global_state["camera"]["target_fps"] = self.target_fps
 
     # ----------------------------------------------------------------------
-    # Capture loop
+    # Capture thread engine
     # ----------------------------------------------------------------------
 
     def _capture_loop(self):
-        """Background capture loop waiting for hardware trigger pulses."""
+        """Background loop awaiting physical GPIO trigger pulses on IMX296."""
         counter = 0
         start_time = time.monotonic()
 
         try:
-            # Explicit controls setup before starting stream capture
+            # Pure libcamera manual settings (No FrameIntegrationMode)
             controls = {
                 "AeEnable": False,
                 "AwbEnable": False,
                 "ScalerCrop": self.roi,
                 "ExposureTime": self.exposure,
                 "AnalogueGain": self.gain,
-                "FrameIntegrationMode": 1,  # 1: External Trigger Mode on IMX296/PiSP
             }
 
-            # Start camera capture session without launching window preview
             self.picam0.start(show_preview=False)
-
-            # Apply initial control parameters
-            try:
-                self.picam0.set_controls(controls)
-            except Exception as ctrl_err:
-                print(f"[Triggered Camera] Warning applying controls: {ctrl_err}")
+            self.picam0.set_controls(controls)
 
             time.sleep(0.1)
 
@@ -178,15 +182,13 @@ class TriggeredCameraStream:
             start_time = time.monotonic()
 
             while self.is_running:
-                # Blocks until an external physical pulse triggers the shutter
+                # Synchronous wait for pulse signal on IMX296 hardware pin
                 frame = self.picam0.capture_array("main")
 
                 if frame is None:
                     continue
 
-                # ----------------------------------------------------------
-                # Create 800 x 1280 output frame with padding
-                # ----------------------------------------------------------
+                # Prepare padded output array (800x1280)
                 display_frame = np.zeros(
                     (
                         self.OUTPUT_HEIGHT,
@@ -197,8 +199,8 @@ class TriggeredCameraStream:
                 )
 
                 display_frame[
-                self.BLACK_BAR_HEIGHT: self.BLACK_BAR_HEIGHT + self.ROI_HEIGHT,
-                :,
+                    self.BLACK_BAR_HEIGHT : self.BLACK_BAR_HEIGHT + self.ROI_HEIGHT,
+                    :,
                 ] = frame
 
                 self.frames.append(display_frame)
@@ -207,7 +209,6 @@ class TriggeredCameraStream:
                 now = time.monotonic()
                 elapsed = now - start_time
 
-                # Update measured trigger frequency in global state
                 if elapsed >= 1.0:
                     measured_fps = counter / elapsed
                     global_state["camera"]["fps"] = int(measured_fps)
@@ -226,11 +227,11 @@ class TriggeredCameraStream:
             global_state["camera"]["fps"] = 0
 
     # ----------------------------------------------------------------------
-    # Start / Stop / Close
+    # Lifecycle Management
     # ----------------------------------------------------------------------
 
     def start(self):
-        """Start listening for external camera triggers asynchronously."""
+        """Start async listener thread."""
         if self.is_running:
             return
 
@@ -245,7 +246,7 @@ class TriggeredCameraStream:
         self._thread.start()
 
     def stop(self):
-        """Stop capture loop and camera hardware cleanly."""
+        """Signal thread shutdown and join."""
         self.is_running = False
 
         if self._thread and self._thread.is_alive():
@@ -254,16 +255,17 @@ class TriggeredCameraStream:
         self._thread = None
 
     def close(self):
-        """Explicitly release libcamera resources to prevent atexit errors."""
+        """Explicitly release libcamera hardware handlers."""
         self.stop()
         if hasattr(self, "picam0") and self.picam0 is not None:
             try:
                 self.picam0.close()
+                self.picam0 = None
             except Exception:
                 pass
 
     # ----------------------------------------------------------------------
-    # Frame access
+    # Consumer Interface
     # ----------------------------------------------------------------------
 
     def get_latest_frame(self):
@@ -281,12 +283,13 @@ class TriggeredCameraStream:
 
 
 # --------------------------------------------------------------------------
-# Combined Example Execution
+# Usage Example
 # --------------------------------------------------------------------------
 
 if __name__ == "__main__":
     from signal import pause
 
+    # Usage option A: standard initialization
     camera = TriggeredCameraStream(
         default_exposure=4096,
         default_gain=8.0,
@@ -298,9 +301,9 @@ if __name__ == "__main__":
 
     try:
         camera.start()
-        print("[System] Waiting for external HW trigger on IMX296...")
+        print("[System] Waiting for HW triggers on IMX296...")
         pause()
     except KeyboardInterrupt:
-        print("\n[System] Shutting down...")
+        print("\n[System] Exiting cleanly...")
     finally:
-        camera.close()  # Clean teardown prevents atexit RuntimeError
+        camera.close()
