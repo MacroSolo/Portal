@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 from threading import Thread
@@ -6,31 +5,32 @@ import matplotlib.pyplot as plt
 
 #from tools.mira220 import *
 #from tools.imx477 import *
-from tools.imx296 import *
+#from tools.imx296 import *
+from tools.imx296xtr import *
 
 from MQTT.MQTT_connector import *
 from tools.my_encoder import EncoderController
 
 from tools.CloudConfigClient import get_config
+
 config = get_config()
 
 from tools.AWS_S3_recorder import *
+
 s3_client = boto3.client('s3',
                          region_name='eu-central-1',
                          aws_access_key_id=config['s3_id'],
                          aws_secret_access_key=config['s3_secret'])
 
-
-
-
 from gpiozero import Button, OutputDevice, GPIODevice
+
 mode = 0
 sw_9 = Button(18, pull_up=True)
 sw_11 = Button(15, pull_up=True)
 
 from tools.gpioexp import CameraExposurePWM
-camera_pwm = CameraExposurePWM(pin=11, fps=30, exposure_us=4096)
 
+camera_pwm = CameraExposurePWM(pin=11, fps=30, exposure_us=4096)
 
 
 def on_switch_change():
@@ -159,7 +159,8 @@ def command_main(topic, payload):
     global_state["last_mqtt_message"] = payload
     print(f"[command] topic={topic}  payload={payload}")
     if payload.lower().startswith("s3/"):
-        save_frame_series_s3(camera.frames, payload.lower()[3:], s3_client, bucket='merlin-ds', timestamp=int(time.time()))
+        save_frame_series_s3(camera.frames, payload.lower()[3:], s3_client, bucket='merlin-ds',
+                             timestamp=int(time.time()))
 
 
 def handle_encoder_change(mode: str, value):
@@ -170,14 +171,15 @@ def handle_encoder_change(mode: str, value):
     elif mode == "gain":
         camera.set_gain(value)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
 
     # Professional configuration design using 'options' and 'default_value'
     ENCODER_CONFIG = {
         "exposure": {
             "default_value": 8192,
-            "options": (64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152)
+            "options": (
+            64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152)
         },
         "gain": {
             "default_value": 1,
@@ -185,15 +187,24 @@ if __name__ == "__main__":
         },
     }
 
-    camera = CameraStream(default_exposure=ENCODER_CONFIG['exposure']["default_value"],
-                          default_gain=ENCODER_CONFIG['gain']["default_value"], buffer_size=100)
+    #camera = CameraStream(default_exposure=ENCODER_CONFIG['exposure']["default_value"],
+    #                      default_gain=ENCODER_CONFIG['gain']["default_value"], buffer_size=100)
+    #camera.start()
+
+    camera = TriggeredCameraStream(
+        default_exposure=ENCODER_CONFIG['exposure']["default_value"],  # 4096 us
+        default_gain=ENCODER_CONFIG['gain']["default_value"],
+        expected_fps=30,
+        buffer_size=100,
+        size=(800, 1080),
+        format="BGR888", )
     camera.start()
+
 
     encoder = EncoderController(
         mode_config=ENCODER_CONFIG,
         on_change_callback=handle_encoder_change
     )
-
 
     mqcmd_main = MQTTClient(
         host="521fa758f36d406f82650a9a06bdefc2.s1.eu.hivemq.cloud",
@@ -205,7 +216,6 @@ if __name__ == "__main__":
     )
 
     mqcmd_main.connect()
-
 
     lut_colormap = get_mpl_lut("CMRmap")
 
@@ -219,8 +229,6 @@ if __name__ == "__main__":
     on_switch_change()
 
     cpu_serial = get_cpu_serial()
-
-
 
     # Create a named window and set it to full screen mode
     window_name = "IR"
