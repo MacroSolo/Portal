@@ -1,9 +1,9 @@
 """
 Raspberry Pi + IMX296 (Global Shutter) + picamera2 + OpenCV + gpiozero.
 
-Fix for Picamera2.start() TypeError and startup timeout:
-- Standard picam2.start() call without invalid arguments.
-- A background pulse is sent during start() to let libcamera initialize without timing out.
+Fix for libcamera continuous trigger timeout:
+- Background thread sends periodic dummy pulses to keep the sensor active.
+- Keypress updates the pulse exposure width for the next captured frame.
 """
 
 import threading
@@ -23,21 +23,29 @@ WINDOW_NAME = "Frame"
 # ---- GPIO setup ---------------------------------------------------------
 xtr = DigitalOutputDevice(XTR_GPIO_PIN, initial_value=False)
 
+# Глобальні змінні для керування тригером
+current_exposure_us = 100  # Фонова довжина імпульсу за замовчуванням (100 мкс)
+running = True
+new_frame_ready = threading.Event()
 
-def pulse_xtr(width_us: int, delay_s: float = 0.002):
-    """Drive XTR pin high for width_us microseconds."""
-    if delay_s > 0:
-        time.sleep(delay_s)
-    xtr.on()
-    time.sleep(width_us / 1_000_000)
-    xtr.off()
+def trigger_loop():
+    """Background thread continuously driving XTR pin to prevent camera timeout."""
+    global current_exposure_us, running
+    while running:
+        exposure = current_exposure_us
+        xtr.on()
+        time.sleep(exposure / 1_000_000)
+        xtr.off()
 
+        # Сигналізуємо про завершення тригерного імпульсу
+        new_frame_ready.set()
 
-def show_blank_frame():
-    """Display an all-zero (black) frame."""
-    blank = np.zeros((FRAME_HEIGHT, FRAME_WIDTH, 3), dtype=np.uint8)
-    cv2.imshow(WINDOW_NAME, blank)
+        # Інтервал між кадрами у фоновому режимі (~10 FPS = 100 мс)
+        time.sleep(0.1)
 
+# ---- Start Background Trigger Thread ------------------------------------
+trigger_thread = threading.Thread(target=trigger_loop, daemon=True)
+trigger_thread.start()
 
 # ---- Camera setup ---------------------------------------------------------
 picam2 = Picamera2()
@@ -46,35 +54,45 @@ camera_config = picam2.create_still_configuration(
 )
 picam2.configure(camera_config)
 
-# Запускаємо перший імпульс в окремому потоці, щоб picam2.start() не падав за таймаутом
-init_trigger = threading.Thread(target=pulse_xtr, args=(2000, 0.1))
-init_trigger.start()
-
-# Стандартний запуск без зайвих аргументів
+# Запускаємо Picamera2 (сенсор вже отримує фонові імпульси від потоку)
 picam2.start()
-init_trigger.join()
 
-# Вимикаємо авто-експозицію/підсилення після запуску
+# Вимикаємо авто-експозицію/підсилення
 try:
     picam2.set_controls({"AeEnable": False, "AwbEnable": False})
 except Exception as e:
     print(f"Warning setting controls: {e}")
 
 
-def trigger_and_capture(pulse_width_us: int):
-    """Send pulse asynchronously and grab the triggered frame."""
-    trigger_thread = threading.Thread(target=pulse_xtr, args=(pulse_width_us, 0.002))
-    trigger_thread.start()
+def show_blank_frame():
+    """Display an all-zero (black) frame."""
+    blank = np.zeros((FRAME_HEIGHT, FRAME_WIDTH, 3), dtype=np.uint8)
+    cv2.imshow(WINDOW_NAME, blank)
 
-    # Запитуємо кадр у камери
+
+def capture_with_exposure(pulse_width_us: int):
+    """Set pulse width for the next frame, capture, and display it."""
+    global current_exposure_us
+
+    # Встановлюємо бажану експозицію для наступного імпульсу
+    current_exposure_us = pulse_width_us
+
+    # Чекаємо, поки фоновий потік згенерує імпульс з новою експозицією
+    new_frame_ready.clear()
+    new_frame_ready.wait(timeout=1.0)
+
+    # Захоплюємо експонований кадр
     frame = picam2.capture_array()
-    trigger_thread.join()
+
+    # Повертаємо фонову експозицію за замовчуванням
+    current_exposure_us = 100
 
     frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     cv2.imshow(WINDOW_NAME, frame_bgr)
 
 
 def main():
+    global running
     cv2.namedWindow(WINDOW_NAME)
     show_blank_frame()
 
@@ -89,9 +107,10 @@ def main():
             if ord("1") <= key <= ord("9"):
                 digit = key - ord("0")
                 pulse_width_us = digit * 1000  # 1000..9000 us
-                trigger_and_capture(pulse_width_us)
+                capture_with_exposure(pulse_width_us)
 
     finally:
+        running = False
         picam2.stop()
         xtr.off()
         xtr.close()
