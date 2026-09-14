@@ -1,61 +1,65 @@
 """
-Raspberry Pi + IMX296 Global Shutter Camera (XTR Trigger Control)
-Control exposure manually via GPIO11 pulse width using keys 1..9.
+Raspberry Pi + IMX296 (Global Shutter) + picamera2 + pigpio
+
+Fixes low brightness, noise, and flickering:
+- Hardware-precise microsecond timing via pigpio Waveforms (DMA).
+- Exact exposure pulse triggered synchronously before frame capture.
 """
 
-import threading
 import time
-
 import cv2
 import numpy as np
-from gpiozero import DigitalOutputDevice
+import pigpio
 from picamera2 import Picamera2
 
 # ---- Configuration ----------------------------------------------------
 XTR_GPIO_PIN = 11          # BCM numbering: GPIO11 (Physical Pin 23)
-FRAME_WIDTH = 1456         # Нативна роздільна здатність IMX296
+FRAME_WIDTH = 1456
 FRAME_HEIGHT = 1088
-WINDOW_NAME = "IMX296 Exposure Test"
+WINDOW_NAME = "IMX296 Stable Exposure"
 
 # Таблиця експозицій для клавіш 1..9 (у мікросекундах)
-# 1 -> 2ms (дуже темне), 9 -> 50ms (дуже яскраве)
+# 1 -> 5ms, 9 -> 65ms (досить яскраво для кімнати)
 EXPOSURE_MAP_US = {
-    ord("1"): 2_000,    # 2 ms
-    ord("2"): 8_000,    # 8 ms
-    ord("3"): 14_000,   # 14 ms
-    ord("4"): 20_000,   # 20 ms
-    ord("5"): 26_000,   # 26 ms
-    ord("6"): 32_000,   # 32 ms
-    ord("7"): 38_000,   # 38 ms
-    ord("8"): 44_000,   # 44 ms
-    ord("9"): 50_000,   # 50 ms
+    ord("1"): 5_000,    # 5 ms
+    ord("2"): 10_000,   # 10 ms
+    ord("3"): 15_000,   # 15 ms
+    ord("4"): 120_000,   # 20 ms
+    ord("5"): 130_000,   # 30 ms
+    ord("6"): 140_000,   # 40 ms
+    ord("7"): 500_000,   # 50 ms
+    ord("8"): 600_000,   # 60 ms
+    ord("9"): 700_000,   # 70 ms
 }
 
-# ---- GPIO Setup ---------------------------------------------------------
-xtr = DigitalOutputDevice(XTR_GPIO_PIN, initial_value=False)
+# ---- Initialize pigpio --------------------------------------------------
+pi = pigpio.pi()
+if not pi.connected:
+    raise SystemExit("Error: pigpiod daemon is not running! Run 'sudo systemctl start pigpiod' first.")
 
-# Глобальні змінні контролю фонового тригера
-current_exposure_us = 10_000  # Фонова експозиція за замовчуванням (10 мс)
-running = True
+pi.set_mode(XTR_GPIO_PIN, pigpio.OUTPUT)
+pi.write(XTR_GPIO_PIN, 0)
 
-def pulse_trigger_loop():
-    """Continuous background trigger loop (~10 Hz) to keep IMX296 active."""
-    global current_exposure_us, running
-    while running:
-        pulse_len = current_exposure_us
 
-        # Наростаючий фронт — початок експозиції
-        xtr.on()
-        time.sleep(pulse_len / 1_000_000)
-        # Спадаючий фронт — кінець експозиції та запуск Readout
-        xtr.off()
+def send_hardware_pulse(width_us: int):
+    """Generates an accurate hardware waveform pulse on GPIO11 using pigpio DMA."""
+    pi.wave_clear()
 
-        # Час на зчитування кадру (Readout Time ~14.5ms) + пауза між кадрами
-        time.sleep(0.08)
+    # Формуємо апаратний імпульс: HIGH на width_us мікросекунд, потім LOW
+    pulse = [
+        pigpio.pulse(1 << XTR_GPIO_PIN, 0, width_us),
+        pigpio.pulse(0, 1 << XTR_GPIO_PIN, 100)
+    ]
 
-# ---- Start Trigger Thread -----------------------------------------------
-trigger_thread = threading.Thread(target=pulse_trigger_loop, daemon=True)
-trigger_thread.start()
+    pi.wave_add_generic(pulse)
+    wave_id = pi.wave_create()
+
+    if wave_id >= 0:
+        pi.wave_send_once(wave_id)  # Надсилаємо імпульс строго один раз
+        while pi.wave_tx_busy():
+            time.sleep(0.001)       # Чекаємо завершення імпульсу
+        pi.wave_delete(wave_id)
+
 
 # ---- Camera Setup -------------------------------------------------------
 picam2 = Picamera2()
@@ -65,46 +69,47 @@ camera_config = picam2.create_still_configuration(
 picam2.configure(camera_config)
 picam2.start()
 
-# Фіксуємо підсилення для чистоти тесту експозиції
+# Налаштування сенсора
 try:
     picam2.set_controls({
         "AeEnable": False,
         "AwbEnable": False,
-        "AnalogueGain": 4.0,  # Фіксоване підсилення x4
+        "AnalogueGain": 8.0,  # Піднімаємо Gain x8 для зниження цифрового шуму в темряві
     })
 except Exception as err:
     print(f"Warning setting controls: {err}")
 
 
 def show_blank_frame():
-    """Display empty frame with key bindings guidance."""
     blank = np.zeros((480, 640, 3), dtype=np.uint8)
-    cv2.putText(blank, "Press 1..9 to capture with exposure pulse", (30, 220),
+    cv2.putText(blank, "Press 1..9 for hardware pulse exposure", (30, 220),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
-    cv2.putText(blank, "1: 2ms | 5: 26ms | 9: 50ms", (30, 260),
+    cv2.putText(blank, "1: 5ms | 5: 30ms | 9: 70ms", (30, 260),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1)
     cv2.imshow(WINDOW_NAME, blank)
 
 
-def capture_with_exposure(exp_us: int):
-    """Set exposure pulse, wait for camera pipeline to receive it, show frame."""
-    global current_exposure_us
-    current_exposure_us = exp_us
+def capture_with_hardware_pulse(exp_us: int):
+    """Send single hardware pulse and read the resulting frame."""
+    print(f"Sending pulse: {exp_us / 1000:.1f} ms...")
 
-    # Чекаємо 100 мс, щоб фоновий потік встиг згенерувати імпульс із оновленою довжиною
-    time.sleep(0.10)
+    # 1. Подаємо один апаратний імпульс
+    send_hardware_pulse(exp_us)
 
+    # 2. Невелика пауза на readout сенсора (14.5 мс у IMX296)
+    time.sleep(0.02)
+
+    # 3. Захоплюємо експонований кадр
     frame = picam2.capture_array()
     frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-    # Розрахунок середньої яскравості та вивід інформації на екран
     avg_brightness = np.mean(frame_bgr)
     info_text = f"Exposure: {exp_us / 1000:.1f} ms | Avg Brightness: {avg_brightness:.1f}"
 
     cv2.putText(frame_bgr, info_text, (20, 40),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
-    print(f"Captured: {info_text}")
+    print(f"Result: {info_text}")
     cv2.imshow(WINDOW_NAME, frame_bgr)
 
 
@@ -122,14 +127,12 @@ def main():
 
             if key in EXPOSURE_MAP_US:
                 exp_us = EXPOSURE_MAP_US[key]
-                capture_with_exposure(exp_us)
+                capture_with_hardware_pulse(exp_us)
 
     finally:
-        global running
-        running = False
         picam2.stop()
-        xtr.off()
-        xtr.close()
+        pi.write(XTR_GPIO_PIN, 0)
+        pi.stop()
         cv2.destroyAllWindows()
 
 
