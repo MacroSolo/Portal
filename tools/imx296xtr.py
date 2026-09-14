@@ -1,8 +1,9 @@
 """
-Raspberry Pi + Global Shutter Camera (picamera2) + OpenCV + gpiozero.
+Raspberry Pi + IMX296 (Global Shutter) + picamera2 + OpenCV + gpiozero.
 
-Fix: 'start_stream=False' prevents the camera driver from timing out
-before any key is pressed.
+Fix for Picamera2.start() TypeError and startup timeout:
+- Standard picam2.start() call without invalid arguments.
+- A background pulse is sent during start() to let libcamera initialize without timing out.
 """
 
 import threading
@@ -22,18 +23,14 @@ WINDOW_NAME = "Frame"
 # ---- GPIO setup ---------------------------------------------------------
 xtr = DigitalOutputDevice(XTR_GPIO_PIN, initial_value=False)
 
-# ---- Camera setup ---------------------------------------------------------
-picam2 = Picamera2()
-camera_config = picam2.create_still_configuration(
-    main={"size": (FRAME_WIDTH, FRAME_HEIGHT), "format": "RGB888"}
-)
-picam2.configure(camera_config)
 
-# Вимикаємо AE/AWB, щоб експозицією повністю керував тригер
-picam2.set_controls({"AeEnable": False, "AwbEnable": False})
-
-# КЛЮЧОВЕ ВИПРАВЛЕННЯ: start_stream=False запобігає таймауту до першого кадру
-picam2.start(start_stream=False)
+def pulse_xtr(width_us: int, delay_s: float = 0.002):
+    """Drive XTR pin high for width_us microseconds."""
+    if delay_s > 0:
+        time.sleep(delay_s)
+    xtr.on()
+    time.sleep(width_us / 1_000_000)
+    xtr.off()
 
 
 def show_blank_frame():
@@ -42,21 +39,34 @@ def show_blank_frame():
     cv2.imshow(WINDOW_NAME, blank)
 
 
-def pulse_xtr(width_us: int, delay_s: float = 0.002):
-    """Drive XTR pin high for width_us microseconds after a tiny delay."""
-    time.sleep(delay_s)
-    xtr.on()
-    time.sleep(width_us / 1_000_000)
-    xtr.off()
+# ---- Camera setup ---------------------------------------------------------
+picam2 = Picamera2()
+camera_config = picam2.create_still_configuration(
+    main={"size": (FRAME_WIDTH, FRAME_HEIGHT), "format": "RGB888"}
+)
+picam2.configure(camera_config)
+
+# Запускаємо перший імпульс в окремому потоці, щоб picam2.start() не падав за таймаутом
+init_trigger = threading.Thread(target=pulse_xtr, args=(2000, 0.1))
+init_trigger.start()
+
+# Стандартний запуск без зайвих аргументів
+picam2.start()
+init_trigger.join()
+
+# Вимикаємо авто-експозицію/підсилення після запуску
+try:
+    picam2.set_controls({"AeEnable": False, "AwbEnable": False})
+except Exception as e:
+    print(f"Warning setting controls: {e}")
 
 
 def trigger_and_capture(pulse_width_us: int):
     """Send pulse asynchronously and grab the triggered frame."""
-    # Запускаємо генерацію імпульсу паралельно
-    trigger_thread = threading.Thread(target=pulse_xtr, args=(pulse_width_us,))
+    trigger_thread = threading.Thread(target=pulse_xtr, args=(pulse_width_us, 0.002))
     trigger_thread.start()
 
-    # Запитуємо кадр (сенсор віддасть його тільки після імпульсу з потоку)
+    # Запитуємо кадр у камери
     frame = picam2.capture_array()
     trigger_thread.join()
 
