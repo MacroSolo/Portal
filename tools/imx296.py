@@ -2,6 +2,7 @@ import time
 import threading
 from collections import deque
 
+import numpy as np
 from picamera2 import Picamera2
 
 from tools.global_vars import global_state
@@ -11,24 +12,38 @@ class CameraStream:
     """
     Sony IMX296 Global Shutter camera stream using Picamera2.
 
-    Default sensor resolution:
+    Sensor resolution:
         1440 x 1080
 
-    The class:
-        - captures frames continuously in a background thread
-        - stores recent frames in a deque
-        - allows dynamic exposure/gain changes
-        - keeps current camera parameters in global_state
-        - calculates actual capture FPS
+    Output resolution:
+        800 x 1280
+
+    Camera ROI:
+        800 x 1080, centered horizontally
+
+    Output frame:
+        800 x 1080 camera image
+        + 100 px black bar at top
+        + 100 px black bar at bottom
     """
 
     SENSOR_WIDTH = 1440
     SENSOR_HEIGHT = 1080
 
+    OUTPUT_WIDTH = 800
+    OUTPUT_HEIGHT = 1280
+
+    ROI_WIDTH = 800
+    ROI_HEIGHT = 1080
+
+    BLACK_BAR_HEIGHT = (
+        OUTPUT_HEIGHT - ROI_HEIGHT
+    ) // 2
+
     def __init__(
         self,
         default_exposure=4096,
-        default_gain=8.0,
+        default_gain=1.0,
         fps=60,
         buffer_size=100,
         size=None,
@@ -40,9 +55,11 @@ class CameraStream:
         self.target_fps = fps
         self.buffer_size = buffer_size
 
+        # Camera output is exactly the sensor ROI:
+        # 800 x 1080
         self.size = size or (
-            self.SENSOR_WIDTH,
-            self.SENSOR_HEIGHT,
+            self.ROI_WIDTH,
+            self.ROI_HEIGHT,
         )
 
         self.format = format
@@ -53,11 +70,32 @@ class CameraStream:
         self._thread = None
 
         # Frame duration in microseconds
-        self.frame_duration = int(1_000_000 / self.target_fps)
+        self.frame_duration = int(
+            1_000_000 / self.target_fps
+        )
 
         # Make sure exposure does not exceed one frame.
         if self.exposure >= self.frame_duration:
             self.exposure = self.frame_duration - 100
+
+        # ------------------------------------------------------------------
+        # Camera ROI
+        # ------------------------------------------------------------------
+
+        self.roi_x = (
+            self.SENSOR_WIDTH - self.ROI_WIDTH
+        ) // 2
+
+        self.roi_y = (
+            self.SENSOR_HEIGHT - self.ROI_HEIGHT
+        ) // 2
+
+        self.roi = (
+            self.roi_x,
+            self.roi_y,
+            self.ROI_WIDTH,
+            self.ROI_HEIGHT,
+        )
 
         # ------------------------------------------------------------------
         # Global state
@@ -73,9 +111,14 @@ class CameraStream:
         global_state["camera"]["gain"] = self.gain
         global_state["camera"]["fps"] = 0
         global_state["camera"]["target_fps"] = self.target_fps
-        global_state["camera"]["resolution"] = self.size
+        global_state["camera"]["resolution"] = (
+            self.OUTPUT_WIDTH,
+            self.OUTPUT_HEIGHT,
+        )
+        global_state["camera"]["camera_resolution"] = self.size
         global_state["camera"]["format"] = self.format
         global_state["camera"]["global_shutter"] = True
+        global_state["camera"]["roi"] = self.roi
 
         # ------------------------------------------------------------------
         # Camera
@@ -105,12 +148,10 @@ class CameraStream:
 
         self.exposure = exposure_time
 
-        # Normal frame duration according to target FPS
         target_frame_duration = int(
             1_000_000 / self.target_fps
         )
 
-        # Exposure must fit into frame duration
         self.frame_duration = max(
             target_frame_duration,
             exposure_time + 1000
@@ -127,7 +168,9 @@ class CameraStream:
                 "ExposureTime": self.exposure,
             })
 
-        actual_fps_limit = 1_000_000 / self.frame_duration
+        actual_fps_limit = (
+            1_000_000 / self.frame_duration
+        )
 
         global_state["camera"]["fps_limit"] = actual_fps_limit
 
@@ -137,7 +180,6 @@ class CameraStream:
             f"FrameDuration: {self.frame_duration} us, "
             f"FPS limit: {actual_fps_limit:.2f}"
         )
-
 
     def set_gain(self, gain_value: float):
         """
@@ -163,7 +205,9 @@ class CameraStream:
         """
 
         if fps <= 0:
-            raise ValueError("FPS must be greater than zero")
+            raise ValueError(
+                "FPS must be greater than zero"
+            )
 
         self.target_fps = float(fps)
 
@@ -173,11 +217,17 @@ class CameraStream:
 
         # Make sure exposure fits into the new frame period.
         if self.exposure >= self.frame_duration:
-            self.exposure = self.frame_duration - 100
+            self.exposure = (
+                self.frame_duration - 100
+            )
 
         global_state["camera"]["fps"] = 0
-        global_state["camera"]["target_fps"] = self.target_fps
-        global_state["camera"]["exposure"] = self.exposure
+        global_state["camera"]["target_fps"] = (
+            self.target_fps
+        )
+        global_state["camera"]["exposure"] = (
+            self.exposure
+        )
 
         if self.is_running:
             self.picam0.set_controls({
@@ -195,6 +245,12 @@ class CameraStream:
     def _capture_loop(self):
         """
         Background camera capture thread.
+
+        Camera frame:
+            800 x 1080
+
+        Final frame:
+            800 x 1280
         """
 
         counter = 0
@@ -206,14 +262,18 @@ class CameraStream:
             # Give libcamera/sensor time to start.
             time.sleep(0.2)
 
-            # Manual exposure/gain.
+            # Manual exposure/gain + central ROI.
             self.picam0.set_controls({
                 "AeEnable": False,
                 "AwbEnable": False,
+
+                "ScalerCrop": self.roi,
+
                 "FrameDurationLimits": (
                     self.frame_duration,
                     self.frame_duration,
                 ),
+
                 "ExposureTime": self.exposure,
                 "AnalogueGain": self.gain,
             })
@@ -226,7 +286,33 @@ class CameraStream:
 
                 frame = self.picam0.capture_array()
 
-                self.frames.append(frame)
+                # ----------------------------------------------------------
+                # Create 800 x 1280 output frame.
+                #
+                # Camera image:
+                #   800 x 1080
+                #
+                # Black bars:
+                #   100 px top
+                #   100 px bottom
+                # ----------------------------------------------------------
+
+                display_frame = np.zeros(
+                    (
+                        self.OUTPUT_HEIGHT,
+                        self.OUTPUT_WIDTH,
+                        frame.shape[2],
+                    ),
+                    dtype=frame.dtype,
+                )
+
+                display_frame[
+                    self.BLACK_BAR_HEIGHT:
+                    self.BLACK_BAR_HEIGHT + self.ROI_HEIGHT,
+                    :
+                ] = frame
+
+                self.frames.append(display_frame)
 
                 counter += 1
 
@@ -234,7 +320,9 @@ class CameraStream:
                 elapsed = now - start_time
 
                 if elapsed >= 1.0:
-                    measured_fps = counter / elapsed
+                    measured_fps = (
+                        counter / elapsed
+                    )
 
                     global_state["camera"]["fps"] = int(
                         measured_fps
@@ -245,7 +333,9 @@ class CameraStream:
 
         except Exception as e:
             global_state["camera"]["error"] = str(e)
-            print(f"CameraStream error: {e}")
+            print(
+                f"CameraStream error: {e}"
+            )
 
         finally:
             try:
@@ -304,6 +394,9 @@ class CameraStream:
 
         Returns:
             numpy.ndarray or None
+
+        Frame size:
+            800 x 1280
         """
 
         if not self.frames:
@@ -338,11 +431,11 @@ if __name__ == "__main__":
     from signal import pause
 
     camera = CameraStream(
-        default_exposure=4096,   # 4.096 ms
+        default_exposure=4096,
         default_gain=8.0,
         fps=60,
         buffer_size=100,
-        size=(1440, 1080),
+        size=(800, 1080),
         format="BGR888",
     )
 
