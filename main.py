@@ -1,8 +1,3 @@
-print('testing main.py')
-
-exit()
-
-
 
 import cv2
 import numpy as np
@@ -10,7 +5,8 @@ from threading import Thread
 import matplotlib.pyplot as plt
 
 #from tools.mira220 import *
-from tools.imx477 import *
+#from tools.imx477 import *
+from tools.imx296 import *
 
 from MQTT.MQTT_connector import *
 from tools.my_encoder import EncoderController
