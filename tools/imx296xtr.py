@@ -1,13 +1,11 @@
 """
 Raspberry Pi + Global Shutter Camera (picamera2) + OpenCV + gpiozero.
 
-Logic:
-- Show a black (zero) frame and wait for a keypress.
-- On keys '1'..'9', send a pulse of (digit * 1000) microseconds on GPIO11 (XTR pin),
-  then capture and show the resulting frame.
-- Press 'q' or ESC to quit.
+Fix: 'start_stream=False' prevents the camera driver from timing out
+before any key is pressed.
 """
 
+import threading
 import time
 
 import cv2
@@ -30,9 +28,12 @@ camera_config = picam2.create_still_configuration(
     main={"size": (FRAME_WIDTH, FRAME_HEIGHT), "format": "RGB888"}
 )
 picam2.configure(camera_config)
-picam2.start()
-# Let the sensor/AE settle before the first real capture
-time.sleep(1.0)
+
+# Вимикаємо AE/AWB, щоб експозицією повністю керував тригер
+picam2.set_controls({"AeEnable": False, "AwbEnable": False})
+
+# КЛЮЧОВЕ ВИПРАВЛЕННЯ: start_stream=False запобігає таймауту до першого кадру
+picam2.start(start_stream=False)
 
 
 def show_blank_frame():
@@ -41,21 +42,24 @@ def show_blank_frame():
     cv2.imshow(WINDOW_NAME, blank)
 
 
-def pulse_xtr(width_us: int):
-    """Drive XTR pin high for width_us microseconds, then low.
-
-    Note: time.sleep() on a non-realtime OS is only accurate to roughly
-    tens of microseconds at best. For tighter/more repeatable timing,
-    consider pigpio's hardware-timed pulses instead of gpiozero.
-    """
+def pulse_xtr(width_us: int, delay_s: float = 0.002):
+    """Drive XTR pin high for width_us microseconds after a tiny delay."""
+    time.sleep(delay_s)
     xtr.on()
     time.sleep(width_us / 1_000_000)
     xtr.off()
 
 
-def capture_and_show():
-    """Grab a frame from the camera and display it."""
-    frame = picam2.capture_array()  # RGB888
+def trigger_and_capture(pulse_width_us: int):
+    """Send pulse asynchronously and grab the triggered frame."""
+    # Запускаємо генерацію імпульсу паралельно
+    trigger_thread = threading.Thread(target=pulse_xtr, args=(pulse_width_us,))
+    trigger_thread.start()
+
+    # Запитуємо кадр (сенсор віддасть його тільки після імпульсу з потоку)
+    frame = picam2.capture_array()
+    trigger_thread.join()
+
     frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     cv2.imshow(WINDOW_NAME, frame_bgr)
 
@@ -75,8 +79,7 @@ def main():
             if ord("1") <= key <= ord("9"):
                 digit = key - ord("0")
                 pulse_width_us = digit * 1000  # 1000..9000 us
-                pulse_xtr(pulse_width_us)
-                capture_and_show()
+                trigger_and_capture(pulse_width_us)
 
     finally:
         picam2.stop()
