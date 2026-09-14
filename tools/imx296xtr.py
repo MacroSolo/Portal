@@ -59,7 +59,7 @@ class TriggeredCameraStream:
         self.is_running = False
         self._thread = None
 
-        # Estimating frame duration for sanity limits (in us)
+        # Frame duration estimation for internal safeguards (in us)
         self.frame_duration = int(1_000_000 / self.target_fps)
 
         if self.exposure >= self.frame_duration:
@@ -93,11 +93,11 @@ class TriggeredCameraStream:
 
         # ------------------------------------------------------------------
         # Camera Initialization
+        # КЛЮЧОВЕ ВИПРАВЛЕННЯ: preview=None повністю вимикає preview engine
         # ------------------------------------------------------------------
 
-        self.picam0 = Picamera2(camera_num=0)
+        self.picam0 = Picamera2(camera_num=0, preview=None)
 
-        # Configure stream without explicit window/preview bindings
         config = self.picam0.create_video_configuration(
             main={
                 "format": self.format,
@@ -132,7 +132,7 @@ class TriggeredCameraStream:
         self.exposure = exposure_time
         global_state["camera"]["exposure"] = self.exposure
 
-        if self.is_running:
+        if self.is_running and self.picam0:
             self.picam0.set_controls({"ExposureTime": self.exposure})
 
         print(f"[Triggered Camera] Exposure: {self.exposure} us ({self.exposure / 1000:.3f} ms)")
@@ -142,7 +142,7 @@ class TriggeredCameraStream:
         self.gain = float(gain_value)
         global_state["camera"]["gain"] = self.gain
 
-        if self.is_running:
+        if self.is_running and self.picam0:
             self.picam0.set_controls({"AnalogueGain": self.gain})
 
     def set_fps(self, fps: float):
@@ -164,7 +164,6 @@ class TriggeredCameraStream:
         start_time = time.monotonic()
 
         try:
-            # Pure libcamera manual settings (No FrameIntegrationMode)
             controls = {
                 "AeEnable": False,
                 "AwbEnable": False,
@@ -173,6 +172,7 @@ class TriggeredCameraStream:
                 "AnalogueGain": self.gain,
             }
 
+            # Передаємо show_preview=False
             self.picam0.start(show_preview=False)
             self.picam0.set_controls(controls)
 
@@ -182,13 +182,12 @@ class TriggeredCameraStream:
             start_time = time.monotonic()
 
             while self.is_running:
-                # Synchronous wait for pulse signal on IMX296 hardware pin
+                # Очікує фізичного імпульсу на піні TRIG камери IMX296
                 frame = self.picam0.capture_array("main")
 
                 if frame is None:
                     continue
 
-                # Prepare padded output array (800x1280)
                 display_frame = np.zeros(
                     (
                         self.OUTPUT_HEIGHT,
@@ -221,7 +220,8 @@ class TriggeredCameraStream:
 
         finally:
             try:
-                self.picam0.stop()
+                if self.picam0:
+                    self.picam0.stop()
             except Exception:
                 pass
             global_state["camera"]["fps"] = 0
@@ -260,9 +260,10 @@ class TriggeredCameraStream:
         if hasattr(self, "picam0") and self.picam0 is not None:
             try:
                 self.picam0.close()
-                self.picam0 = None
             except Exception:
                 pass
+            finally:
+                self.picam0 = None
 
     # ----------------------------------------------------------------------
     # Consumer Interface
@@ -289,7 +290,6 @@ class TriggeredCameraStream:
 if __name__ == "__main__":
     from signal import pause
 
-    # Usage option A: standard initialization
     camera = TriggeredCameraStream(
         default_exposure=4096,
         default_gain=8.0,
