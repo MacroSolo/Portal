@@ -28,7 +28,9 @@ mode = 0
 sw_9 = Button(18, pull_up=True)
 sw_11 = Button(15, pull_up=True)
 
-sync_exp = OutputDevice(11, initial_value=True)
+from tools.gpioexp import CameraExposurePWM
+camera_pwm = CameraExposurePWM(pin=11, fps=30, exposure_us=4096)
+
 
 
 def on_switch_change():
