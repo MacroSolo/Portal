@@ -62,6 +62,7 @@ class CameraStream:
         """Enable hardware strobe/flash output flags safely for libcamera."""
         # Check advertised controls to prevent RuntimeError
         advertised = getattr(self.picam0, "camera_controls", {})
+        input(f"Advertised controls: {list(advertised.keys())}")
 
         if "FlashMode" in advertised:
             controls_dict["FlashMode"] = 1
