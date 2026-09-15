@@ -167,7 +167,6 @@ def handle_encoder_change(mode: str, value):
     elif mode == "gain":
         camera.set_gain(value)
 
-
 if __name__ == "__main__":
     print("=== Starting Main Application ===")
     # Professional configuration design using 'options' and 'default_value'
