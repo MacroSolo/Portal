@@ -183,20 +183,10 @@ if __name__ == "__main__":
         },
     }
 
-    #camera = CameraStream(default_exposure=ENCODER_CONFIG['exposure']["default_value"],
-    #                      default_gain=ENCODER_CONFIG['gain']["default_value"], buffer_size=100)
-    #camera.start()
-
-    camera = TriggeredCameraStream(
-        default_exposure=ENCODER_CONFIG['exposure']["default_value"],  # 4096 us
-        default_gain=ENCODER_CONFIG['gain']["default_value"],
-        expected_fps=30,
-        buffer_size=100,
-        size=(800, 1080),
-        format="BGR888", )
+    camera = CameraStream(default_exposure=ENCODER_CONFIG['exposure']["default_value"],
+                          default_gain=ENCODER_CONFIG['gain']["default_value"], buffer_size=100)
     camera.start()
 
-    exit()
 
     encoder = EncoderController(
         mode_config=ENCODER_CONFIG,
