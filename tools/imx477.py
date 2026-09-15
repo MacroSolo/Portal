@@ -59,10 +59,17 @@ class CameraStream:
             self.picam0.set_controls({"AnalogueGain": self.gain})
 
     def _apply_strobe_control(self, controls_dict: dict):
-        """Enable hardware strobe/flash output flags for libcamera."""
-        # Sets strobe flags compatible with various libcamera driver versions
-        controls_dict["StrobeMode"] = 1
-        controls_dict["FlashMode"] = 1
+        """Enable hardware strobe/flash output flags safely for libcamera."""
+        # Check advertised controls to prevent RuntimeError
+        advertised = getattr(self.picam0, "camera_controls", {})
+
+        if "FlashMode" in advertised:
+            controls_dict["FlashMode"] = 1
+            print("FlashMode control applied for strobe output.")
+        elif "StrobeMode" in advertised:
+            controls_dict["StrobeMode"] = 1
+            print("StrobeMode control applied for strobe output.")
+
 
     def _capture_loop(self):
         """Internal capture loop executed in a separate background thread."""
