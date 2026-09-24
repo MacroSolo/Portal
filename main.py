@@ -244,8 +244,8 @@ if __name__ == "__main__":
             ]
 
             # Frame preprocessing
-
-            frame = frame[:, :, 2]
+            #if frame.ndim == 3 and frame.shape[2] == 3:
+            #    frame = frame[:, :, 2]
 
             frame = np.clip(frame, 35, 255)
 
