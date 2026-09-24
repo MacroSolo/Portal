@@ -10,8 +10,8 @@ class CameraStream:
     """Manages Mira220 Picamera2 streaming, frame buffer deque, cropping/rotation, and controls hardware parameters."""
 
     def __init__(self, default_exposure=1000, default_gain=8.0, buffer_size=100):
-        self.exposure = default_exposure
-        self.gain = default_gain
+        self.exposure = int(default_exposure)
+        self.gain = float(default_gain)
         self.frames = deque(maxlen=buffer_size)
         self.is_running = False
         self._thread = None
@@ -30,41 +30,44 @@ class CameraStream:
         )
         self.picam0.configure(config0)
 
+    def _apply_controls(self):
+        """Apply manual exposure and gain parameters to the hardware controls."""
+        min_frame_duration = self.exposure + 1000
+        max_frame_duration = max(20_000_000, min_frame_duration)
+
+        controls = {
+            "AeEnable": False,
+            "AwbEnable": False,
+            "FrameDurationLimits": (min_frame_duration, max_frame_duration),
+            "ExposureTime": self.exposure,
+            "AnalogueGain": float(self.gain),
+        }
+
+        self.picam0.set_controls(controls)
+
     def set_exposure(self, exposure_time: int):
-        """Dynamically update exposure time (in microseconds) and auto-adjust frame duration limits."""
-        self.exposure = exposure_time
+        """Dynamically update exposure time (in microseconds)."""
+        self.exposure = int(exposure_time)
         global_state["camera"]["exposure"] = self.exposure
 
         if self.is_running:
-            # Minimum frame duration must be equal to or greater than exposure time + overhead
-            min_frame_duration = exposure_time + 1000
-            # Set max frame duration to allow long exposures if needed
-            max_frame_duration = max(20_000_000, min_frame_duration)
-
-            self.picam0.set_controls({
-                "FrameDurationLimits": (min_frame_duration, max_frame_duration),
-                "ExposureTime": self.exposure
-            })
+            self._apply_controls()
 
     def set_gain(self, gain_value: float):
         """Dynamically update camera analogue gain."""
-        self.gain = gain_value
+        self.gain = float(gain_value)
         global_state["camera"]["gain"] = self.gain
 
         if self.is_running:
-            self.picam0.set_controls({"AnalogueGain": self.gain})
+            self._apply_controls()
 
     def _capture_loop(self):
         """Internal capture loop executed in a separate background thread."""
         self.picam0.start()
         time.sleep(0.5)
 
-        # Disable auto exposure and set manual hardware parameters
-        self.picam0.set_controls({
-            "AeEnable": False,
-            "ExposureTime": self.exposure,
-            "AnalogueGain": self.gain,
-        })
+        # Apply initial manual settings
+        self._apply_controls()
 
         counter = 0
         start_time = time.time()
@@ -74,10 +77,8 @@ class CameraStream:
                 # Capture raw array from sensor
                 frame0 = self.picam0.capture_array()
 
-                # Rotate image 180 degrees
-                #frame0 = cv2.rotate(frame0, cv2.ROTATE_180)
-
-                # Push processed frame into the deque buffer
+                # Crop padding if necessary and update frame deque
+                frame0 = frame0[:1400, :1600]
                 self.frames.append(frame0)
 
                 # FPS Calculation
