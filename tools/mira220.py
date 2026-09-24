@@ -21,6 +21,7 @@ class CameraStream:
 
         global_state["camera"]["exposure"] = self.exposure
         global_state["camera"]["gain"] = self.gain
+        global_state["camera"]["real_gain"] = 0.0
         global_state["camera"]["fps"] = 0
 
         self.picam0 = Picamera2(camera_num=0)
@@ -76,6 +77,10 @@ class CameraStream:
             while self.is_running:
                 # Capture raw array from sensor
                 frame0 = self.picam0.capture_array()
+
+                # Read frame metadata for gain diagnostic
+                metadata = self.picam0.capture_metadata()
+                global_state["camera"]["real_gain"] = metadata.get("AnalogueGain", 0.0)
 
                 # Crop padding if necessary and update frame deque
                 frame0 = frame0[:1400, :1600]
