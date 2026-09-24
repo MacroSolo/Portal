@@ -75,7 +75,7 @@ class CameraStream:
                 frame0 = self.picam0.capture_array()
 
                 # Rotate image 180 degrees
-                frame0 = cv2.rotate(frame0, cv2.ROTATE_180)
+                #frame0 = cv2.rotate(frame0, cv2.ROTATE_180)
 
                 # Push processed frame into the deque buffer
                 self.frames.append(frame0)
