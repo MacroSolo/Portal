@@ -71,13 +71,10 @@ class CameraStream:
 
         try:
             while self.is_running:
-                # 1. Capture raw array from sensor
+                # Capture raw array from sensor
                 frame0 = self.picam0.capture_array()
 
-                # 2. Crop to 1600x1400 area
-                frame0 = frame0[:1400, :1600]
-
-                # 3. Rotate image 180 degrees
+                # Rotate image 180 degrees
                 frame0 = cv2.rotate(frame0, cv2.ROTATE_180)
 
                 # Push processed frame into the deque buffer
