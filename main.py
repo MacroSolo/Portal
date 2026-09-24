@@ -230,6 +230,10 @@ if __name__ == "__main__":
         if frame is not None:
             frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
+            # 1600, 1400 -> 800, 1280
+            frame = frame[400:1200, 160:1440]  # Crop to 800x1280 region of interest
+
+
             cpu_temp = 0.9 * cpu_temp + 0.1 * get_cpu_temperature()
 
             logs = [
