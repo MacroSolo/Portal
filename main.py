@@ -3,8 +3,8 @@ import numpy as np
 from threading import Thread
 import matplotlib.pyplot as plt
 
-#from tools.mira220 import *
-from tools.imx477 import *
+from tools.mira220 import *
+#from tools.imx477 import *
 #from tools.imx296 import *
 #from tools.imx296xtr import *
 
