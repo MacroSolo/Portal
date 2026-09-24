@@ -6,7 +6,7 @@ from tools.global_vars import global_state
 
 
 class CameraStream:
-    """Manages Mira220 Picamera2 streaming, frame buffer deque, and controls hardware parameters."""
+    """Manages Mira220 Picamera2 streaming safely without hardware locks."""
 
     def __init__(self, default_exposure=1000, default_gain=8.0, buffer_size=100):
         self.exposure = int(default_exposure)
@@ -25,10 +25,10 @@ class CameraStream:
 
         self.picam0 = Picamera2(camera_num=0)
 
-        # Configure stream for Mira220
+        # Standard stable preview configuration for Mira220
         config0 = self.picam0.create_preview_configuration(
             main={"format": "YUV420", "size": (1600, 1400)},
-            buffer_count=4,  # Increased buffer count for long exposures
+            buffer_count=2,
         )
         self.picam0.configure(config0)
 
@@ -38,8 +38,9 @@ class CameraStream:
         global_state["camera"]["exposure"] = self.exposure
 
         if self.is_running:
-            min_frame_duration = self.exposure + 1000
-            max_frame_duration = max(30_000_000, min_frame_duration)
+            # Keep frame duration close to exposure time to avoid hardware timeouts
+            min_frame_duration = self.exposure + 500
+            max_frame_duration = self.exposure + 500000  # Max 0.5s overhead limit
 
             self.picam0.set_controls({
                 "AeEnable": False,
@@ -48,34 +49,30 @@ class CameraStream:
             })
 
     def set_gain(self, gain_value: float):
-        """Dynamically update camera gain (Analogue + Digital for Mira220 support)."""
+        """Dynamically update camera analogue gain safely."""
         self.gain = float(gain_value)
         global_state["camera"]["gain"] = self.gain
 
         if self.is_running:
-            # Mira220 uses DigitalGain/Gain controls in Libcamera ISP
             self.picam0.set_controls({
                 "AeEnable": False,
                 "AnalogueGain": self.gain,
-                "DigitalGain": self.gain,
             })
 
     def _capture_loop(self):
         """Internal capture loop executed in a separate background thread."""
         self.picam0.start()
-        time.sleep(0.5)
+        time.sleep(0.3)
 
-        # Initial hardware setup
-        min_frame_duration = self.exposure + 1000
-        max_frame_duration = max(30_000_000, min_frame_duration)
+        # Set initial stable controls
+        min_frame_duration = self.exposure + 500
+        max_frame_duration = self.exposure + 500000
 
         self.picam0.set_controls({
             "AeEnable": False,
-            "AwbEnable": False,
             "FrameDurationLimits": (min_frame_duration, max_frame_duration),
             "ExposureTime": self.exposure,
             "AnalogueGain": self.gain,
-            "DigitalGain": self.gain,
         })
 
         counter = 0
@@ -83,20 +80,15 @@ class CameraStream:
 
         try:
             while self.is_running:
-                # Non-blocking or standard frame capture
                 frame0 = self.picam0.capture_array()
 
                 # Crop padding for Mira220 sensor (1600x1400)
                 frame0 = frame0[:1400, :1600]
                 self.frames.append(frame0)
 
-                # Diagnostic: read DigitalGain if AnalogueGain is fixed by driver
+                # Diagnostic: read real applied gain from metadata
                 metadata = self.picam0.capture_metadata()
-                real_analogue = metadata.get("AnalogueGain", 0.0)
-                real_digital = metadata.get("DigitalGain", 0.0)
-
-                # Store the effective gain value
-                global_state["camera"]["real_gain"] = real_digital if real_digital > 0 else real_analogue
+                global_state["camera"]["real_gain"] = metadata.get("AnalogueGain", 0.0)
 
                 # Calculate FPS
                 counter += 1
