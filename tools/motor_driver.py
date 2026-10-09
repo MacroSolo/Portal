@@ -34,5 +34,5 @@ if __name__ == "__main__":
         ch = int(input("Select motor channel (0 for A, 1 for B): "))
         state = int(input("Select motor state (0 for off, 1 for forward, 2 for backward): "))
         #motor(ch, state)
-        switch_filter(ch, state, pulse_ms=1000)
+        switch_filter(ch, state, pulse_ms=100)
 
