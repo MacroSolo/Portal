@@ -163,11 +163,11 @@ def command_main(topic, payload):
 
 def handle_encoder_change(mode: str, value):
     print(f"[Encoder Event] Mode: {mode} -> Value: {value}")
-
     if mode == "exposure":
         camera.set_exposure(value)
     elif mode == "gain":
         camera.set_gain(value)
+
 
 if __name__ == "__main__":
     print("=== Starting Main Application ===")
@@ -235,13 +235,22 @@ if __name__ == "__main__":
             # 1600, 1400 -> 800, 1280
             frame = frame[400:1200, 60:1340]  # Crop to 800x1280 region of interest
 
-
             cpu_temp = 0.9 * cpu_temp + 0.1 * get_cpu_temperature()
+
+            if mode == 1:
+                irmode = 'IR'
+                camera.set_exposure(16348)
+            elif mode == 2:
+                irmode = "VIS"
+                camera.set_exposure(1024)
+            else:
+                irmode = 'Unk'
+
 
             logs = [
                 f"CPU Serial: {cpu_serial}",
                 f"CPU Temp: {int(cpu_temp)} C",
-                f"mode: {mode}",
+                f"mode: {mode} {irmode}",
                 f"camera: {global_state['camera']}",
                 f"resolution: {frame.shape}",
                 f"frames: {len(camera.frames)}",
