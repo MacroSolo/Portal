@@ -2,7 +2,7 @@ from gpiozero import OutputDevice
 import time
 
 MOTOR_A = [OutputDevice(9), OutputDevice(11)]
-MOTOR_B = [OutputDevice(17), OutputDevice(27)]
+MOTOR_B = [OutputDevice(13), OutputDevice(19)]
 
 def motor(ch, state):
     motor = [MOTOR_A, MOTOR_B][ch]
