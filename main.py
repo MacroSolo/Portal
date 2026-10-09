@@ -28,6 +28,8 @@ mode = 0
 sw_9 = Button(18, pull_up=True)
 sw_11 = Button(15, pull_up=True)
 
+from tools.motor_driver import *
+
 
 def on_switch_change():
     global mode
@@ -254,15 +256,18 @@ if __name__ == "__main__":
             frame = np.clip(frame, 35, 255)
 
             if mode == 0:
-                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
-
-            elif mode == 2:
                 frame = rank_normalize_image(frame)
                 colored_frame = cv2.applyColorMap(frame, lut_colormap)
 
-            else:
-                frame = rank_normalize_image(frame)
+            elif mode == 2:
+                switch_filter(0, 2, pulse_ms=100)
                 colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
+
+            else:
+                #frame = rank_normalize_image(frame)
+                switch_filter(0, 1, pulse_ms=100)
+                colored_frame = cv2.applyColorMap(frame, cv2.COLORMAP_BONE)
+
 
             frame = colored_frame
 
