@@ -1,0 +1,12 @@
+# Secrets: filled in manually, never committed
+config/secrets.env
+config/certs/*
+!config/certs/.gitkeep
+*_accessKeys.csv
+*.pem
+
+# Python cache
+__pycache__/
+
+# macOS
+.DS_Store

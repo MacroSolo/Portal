@@ -1,22 +1,24 @@
 import csv
 import boto3
 import cv2
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import io
 from tools.global_vars import global_state
 
 
-def open_s3_connection(credentials='/home/admin/Desktop/Merlin/credentials/s3-user_accessKeys.csv'):
-    reader = csv.DictReader(open(credentials, encoding="utf-8-sig"))
-
-    for row in reader:
-        access_key = row['Access key ID']
-        secret_key = row['Secret access key']
-    s3_client = boto3.client('s3',
-                             region_name='eu-central-1',
-                             aws_access_key_id=access_key,
-                             aws_secret_access_key=secret_key)
-    return s3_client
+def open_s3_connection(config=None):
+    """S3 client with AWS_S3_ACCESS_KEY_ID / AWS_S3_SECRET_ACCESS_KEY / AWS_REGION from config/secrets.env."""
+    if config is None:
+        from config import load_env
+        config = load_env()
+    key_id = config.get("AWS_S3_ACCESS_KEY_ID")
+    secret = config.get("AWS_S3_SECRET_ACCESS_KEY")
+    if not (key_id and secret):
+        raise RuntimeError("AWS_S3_ACCESS_KEY_ID / AWS_S3_SECRET_ACCESS_KEY empty in config/secrets.env")
+    return boto3.client('s3',
+                        region_name=config.get("AWS_REGION") or "eu-central-1",
+                        aws_access_key_id=key_id,
+                        aws_secret_access_key=secret)
 
 
 def save_frame_series_s3(frames, label, s3_client, bucket, timestamp=0):
@@ -25,16 +27,18 @@ def save_frame_series_s3(frames, label, s3_client, bucket, timestamp=0):
         print("Recording is already in progress. Please wait until the current recording is finished.")
         return
 
-    else:
-        global_state["RECORDING"] = True
-        frames_copy = frames.copy()
+    global_state["RECORDING"] = True
+    try:
+        frames_copy = list(frames)
+        if not frames_copy:
+            print(f"No frames to save for '{label}' (camera buffer is empty)")
+            return
 
         def upload_frame(args):
             idx, frame = args
             success, buffer = cv2.imencode('.png', frame)
             if not success:
-                print(f"Failed to encode frame {idx}")
-                return
+                raise RuntimeError(f"Failed to encode frame {idx}")
 
             key = f"{label}/{timestamp}_{idx}.png"
             s3_client.put_object(
@@ -43,15 +47,27 @@ def save_frame_series_s3(frames, label, s3_client, bucket, timestamp=0):
                 Body=buffer.tobytes(),
                 ContentType='image/png'
             )
+            return key
 
-        num_frames = len(frames_copy)
-        optimal_workers = min(32, num_frames)
-
+        optimal_workers = min(32, len(frames_copy))
+        ok, failed = 0, 0
         with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
-            executor.map(upload_frame, enumerate(frames_copy))
+            futures = {executor.submit(upload_frame, item): item[0]
+                       for item in enumerate(frames_copy)}
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                    ok += 1
+                except Exception as e:
+                    failed += 1
+                    print(f"S3 upload of frame {futures[future]} failed: {type(e).__name__}: {e}")
 
+        print(f"Saved {ok}/{len(frames_copy)} frames to S3 bucket '{bucket}/{label}'"
+              + (f", {failed} failed" if failed else ""))
+    except Exception as e:
+        print(f"S3 recording '{label}' failed: {type(e).__name__}: {e}")
+    finally:
         global_state["RECORDING"] = False
-        print(f"Saved {len(frames_copy)} frames to S3 bucket '{bucket}/{label}'")
 
 
 

@@ -130,10 +130,13 @@ class MQTTClient:
 # Example usage
 # ------------------------------------------------------------------
 if __name__ == "__main__":
-    HOST     = "521fa758f36d406f82650a9a06bdefc2.s1.eu.hivemq.cloud"
-    PORT     = 8883
-    USERNAME = "Merlin"   # <-- replace
-    PASSWORD = "Merlin6m"   # <-- replace
+    # python3 -m MQTT.MQTT_connector  (from the repo root): login from config/secrets.env
+    from config import load_env
+    secrets = load_env()
+    HOST     = secrets["MQTT_HOST"]
+    PORT     = int(secrets.get("MQTT_PORT") or 8883)
+    USERNAME = secrets["MQTT_USER"]
+    PASSWORD = secrets["MQTT_PASSWORD"]
     TOPIC    = "test"
 
     def command(topic, payload):

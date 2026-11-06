@@ -11,16 +11,25 @@ from tools.mira220 import *
 from MQTT.MQTT_connector import *
 from tools.my_encoder import EncoderController
 
-from tools.CloudConfigClient import get_config
+import sys
+from pathlib import Path
 
+from config import get_config
+
+# Keys, passwords, tokens: config/secrets.env (template: config/secrets.env.example)
 config = get_config()
+
+# Exit code for "quit by user" (q): portal_autogit.py stops instead of restarting main.
+# Must match QUIT_EXIT_CODE in portal_autogit.py
+QUIT_EXIT_CODE = 10
+
+_logo = (Path(__file__).resolve().parent / "tools" / "merlin.txt").read_text()
+print(f"{_logo}\n{' ' + str(config['Serial']) + ' ':⣿^73}\n" + "⣿" * 73)
 
 from tools.AWS_S3_recorder import *
 
-s3_client = boto3.client('s3',
-                         region_name='eu-central-1',
-                         aws_access_key_id=config['s3_id'],
-                         aws_secret_access_key=config['s3_secret'])
+s3_client = open_s3_connection(config)
+S3_BUCKET = config.get("S3_BUCKET") or "merlin-ds"
 
 from gpiozero import Button, OutputDevice, GPIODevice
 
@@ -157,7 +166,7 @@ def command_main(topic, payload):
     global_state["last_mqtt_message"] = payload
     print(f"[command] topic={topic}  payload={payload}")
     if payload.lower().startswith("s3/"):
-        save_frame_series_s3(camera.frames, payload.lower()[3:], s3_client, bucket='merlin-ds',
+        save_frame_series_s3(camera.frames, payload.lower()[3:], s3_client, bucket=S3_BUCKET,
                              timestamp=int(time.time()))
 
 
@@ -195,11 +204,11 @@ if __name__ == "__main__":
     )
 
     mqcmd_main = MQTTClient(
-        host="521fa758f36d406f82650a9a06bdefc2.s1.eu.hivemq.cloud",
-        port=8883,
-        username="Merlin",
-        password="Merlin6m",
-        subscription="portal/commands",
+        host=config["MQTT_HOST"],
+        port=int(config.get("MQTT_PORT") or 8883),
+        username=config["MQTT_USER"],
+        password=config["MQTT_PASSWORD"],
+        subscription=config.get("MQTT_TOPIC") or "portal/commands",
         on_message=command_main,
     )
 
@@ -254,7 +263,7 @@ if __name__ == "__main__":
                 f"camera: {global_state['camera']}",
                 f"resolution: {frame.shape}",
                 f"frames: {len(camera.frames)}",
-                f"MQTT: {global_state["last_mqtt_message"]}",
+                f"MQTT: {global_state['last_mqtt_message']}",
                 f"REC" if global_state['RECORDING'] else "",
             ]
 
@@ -289,3 +298,4 @@ if __name__ == "__main__":
 
     cv2.destroyAllWindows()
     pin.off()
+    sys.exit(QUIT_EXIT_CODE)
